@@ -487,94 +487,119 @@
       text-align: center;
     }
 
-    /* PetsHeaven 5-Second Sponsored Ad Modal */
-    .ad-modal {
+    /* PetsHeaven Fullscreen Forced 5-Second Ad */
+    .pets-fullscreen-ad {
       position: fixed;
       top: 0;
       left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #000000;
+      z-index: 9999999;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 16px;
+      box-sizing: border-box;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      overflow: hidden;
+      animation: adFadeIn 0.3s ease;
+    }
+    @keyframes adFadeIn {
+      from { opacity: 0; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .ad-top-bar {
       width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.92);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+    .ad-sponsor-tag {
+      background: rgba(255, 255, 255, 0.15);
       backdrop-filter: blur(8px);
-      z-index: 1100;
-      display: none;
+      color: #fab387;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+    .ad-countdown-pill {
+      background: rgba(20, 20, 30, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #f9e2af;
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+    .ad-close-x-btn {
+      background: rgba(243, 139, 168, 0.95);
+      color: #ffffff;
+      border: 2px solid #ffffff;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      font-size: 1.4rem;
+      font-weight: 900;
+      display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
-    }
-    .ad-content {
-      background: #1e1e2e;
-      border: 2px solid var(--accent);
-      border-radius: 16px;
-      max-width: 440px;
-      width: 100%;
-      padding: 24px;
-      text-align: center;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-      animation: popIn 0.3s ease;
-    }
-    @keyframes popIn {
-      from { transform: scale(0.9); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-    .ad-badge {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--subtext);
-      margin-bottom: 8px;
-    }
-    .ad-brand {
-      font-size: 1.8rem;
-      font-weight: 800;
-      color: var(--accent);
-      margin-bottom: 4px;
-    }
-    .ad-tagline {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--primary);
-      margin-bottom: 12px;
-    }
-    .ad-desc {
-      font-size: 0.85rem;
-      color: var(--text);
-      line-height: 1.4;
-      margin-bottom: 20px;
-    }
-    .ad-visit-btn {
-      display: block;
-      background: linear-gradient(135deg, #fab387, #f38ba8);
-      color: #11111b;
-      font-weight: 700;
-      padding: 14px;
-      border-radius: 10px;
-      text-decoration: none;
-      font-size: 1rem;
-      margin-bottom: 16px;
-    }
-    .ad-timer-text {
-      font-size: 0.85rem;
-      color: #f9e2af;
-      margin-bottom: 12px;
-      font-weight: 600;
-    }
-    .ad-skip-btn {
-      background: var(--surface);
-      color: var(--subtext);
-      border: none;
-      padding: 8px 18px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
-    .ad-skip-btn.ready {
-      background: var(--primary);
-      color: #11111b;
       cursor: pointer;
-      opacity: 1;
-      font-weight: 600;
+      box-shadow: 0 4px 20px rgba(243, 139, 168, 0.6);
+      transition: transform 0.15s ease, background 0.15s ease;
+      z-index: 20;
+    }
+    .ad-close-x-btn:active {
+      transform: scale(0.9);
+      background: #f38ba8;
+    }
+    .ad-visual-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-height: calc(100vh - 160px);
+      padding: 10px 0;
+    }
+    .ad-fullscreen-img {
+      max-width: 94vw;
+      max-height: 68vh;
+      object-fit: contain;
+      border-radius: 18px;
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      transition: transform 0.3s ease;
+    }
+    .ad-fullscreen-img:hover {
+      transform: scale(1.02);
+    }
+    .ad-bottom-bar {
+      text-align: center;
+      width: 100%;
+      z-index: 10;
+      pointer-events: none;
+      padding-bottom: env(safe-area-inset-bottom, 12px);
+    }
+    .ad-hero-title {
+      color: #ffffff;
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    }
+    .ad-tap-hint {
+      color: #89dceb;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.8);
     }
 
     /* Clean Mobile Settings Modal */
@@ -758,27 +783,21 @@
     </div>
   </div>
 
-  <!-- PetsHeaven 5-Second Sponsored Ad Modal -->
-  <div class="ad-modal" id="petsAdModal">
-    <div class="ad-content">
-      <div class="ad-badge">⭐ SPONSORED ANNOUNCEMENT ⭐</div>
-      <div class="ad-brand">🐾 PetsHeaven</div>
-      <div class="ad-tagline">Your One-Stop Pet Paradise</div>
-      <div class="ad-desc">
-        Premium quality food, treats, toys, and grooming essentials for your lovely pets! Express home delivery across India.
-      </div>
-      
-      <a href="https://petsheaven.in" target="_blank" class="ad-visit-btn" id="adVisitLink" onclick="onAdClick(event)">
-        🛍️ Shop at petsheaven.in Now ➔
-      </a>
+  <!-- PetsHeaven Fullscreen Forced Ad -->
+  <div class="pets-fullscreen-ad" id="petsFullscreenAd" onclick="onAdViewportClick(event)" style="display: none;">
+    <div class="ad-top-bar" onclick="event.stopPropagation()">
+      <div class="ad-sponsor-tag">⭐ SPONSORED • PETSHEAVEN.IN</div>
+      <div class="ad-countdown-pill" id="adCountdownPill">⏱️ Ad closes in 5s</div>
+      <button class="ad-close-x-btn" id="adCloseXBtn" style="display: none;" onclick="dismissAd(event)" title="Close Ad">✕</button>
+    </div>
 
-      <div class="ad-timer-text" id="adTimerText">
-        ⏳ Download starting in 5 seconds...
-      </div>
+    <div class="ad-visual-container">
+      <img src="petsheaven_logo.webp" alt="PetsHeaven Pet Store" class="ad-fullscreen-img" id="petsLogoImg">
+    </div>
 
-      <button class="ad-skip-btn" id="adSkipBtn" disabled>
-        Wait 5s
-      </button>
+    <div class="ad-bottom-bar">
+      <div class="ad-hero-title">🐾 PetsHeaven - India's Favorite Pet Store</div>
+      <div class="ad-tap-hint">👉 Tap anywhere on screen to visit petsheaven.in</div>
     </div>
   </div>
 
