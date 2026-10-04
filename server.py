@@ -116,14 +116,30 @@ def run_download_worker(task):
         fmt = "bestaudio/best"
         extra_args = ["-x", "--audio-format", "mp3"]
     else:
-        h = "1080"
-        if task.quality == '4k': h = "2160"
-        elif task.quality == '1080p': h = "1080"
-        elif task.quality == '720p': h = "720"
-        elif task.quality == '480p': h = "480"
-        elif task.quality == '360p': h = "360"
-        fmt = f"bestvideo[height<={h}]+bestaudio/best[height<={h}]/best"
+        q = (task.quality or "720p").lower()
+        if q in ['best', '4k', '2160p']:
+            fmt = "bestvideo+bestaudio/best"
+        elif q == '1080p':
+            fmt = "bestvideo[height<=1920][width<=1080]+bestaudio/bestvideo[height<=1080][width<=1920]+bestaudio/bestvideo[height<=1080]+bestaudio/best"
+        elif q == '720p':
+            fmt = "bestvideo[height<=1280][width<=720]+bestaudio/bestvideo[height<=720][width<=1280]+bestaudio/bestvideo[height<=720]+bestaudio/best"
+        elif q == '480p':
+            fmt = "bestvideo[height<=1080][width<=608]+bestaudio/bestvideo[height<=480][width<=854]+bestaudio/bestvideo[height<=480]+bestaudio/best"
+        elif q == '360p':
+            fmt = "bestvideo[height<=640][width<=360]+bestaudio/bestvideo[height<=360][width<=640]+bestaudio/bestvideo[height<=360]+bestaudio/best"
+        else:
+            fmt = "bestvideo[height<=1280][width<=720]+bestaudio/bestvideo[height<=720][width<=1280]+bestaudio/bestvideo[height<=720]+bestaudio/best"
+
         extra_args = ["--merge-output-format", "mp4"]
+
+    # Explicitly hook Deno runtime for YouTube deciphering
+    deno_bin = shutil.which("deno")
+    if not deno_bin and os.path.exists(deno_user_dir):
+        candidate = os.path.join(deno_user_dir, "deno")
+        if os.path.exists(candidate):
+            deno_bin = candidate
+    if deno_bin:
+        extra_args.extend(["--js-runtimes", f"deno:{deno_bin}"])
 
     out_template = os.path.join(DOWNLOAD_DIR, f"%(title).60s_%(id)s.{ext}")
 
@@ -136,7 +152,7 @@ def run_download_worker(task):
         task.url
     ] + extra_args
 
-    print(f"[{task.id}] Starting download: {task.url}")
+    print(f"[{task.id}] Starting download: {task.url} (quality: {task.quality}, fmt: {fmt})")
     try:
         proc = subprocess.Popen(
             cmd,
@@ -259,7 +275,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"tasks": task_list, "total_speed": total_speed}).encode("utf-8"))
             return
 
-        # 2. Serve static files (HTML, icons, manifest, service worker)
+        # 2. Serve static files (HTML, icons, manifest, service worker, ad logo)
         if path in ["/", "/index.html"]:
             index_file = get_asset_file("index.html")
             if index_file and os.path.exists(index_file):
@@ -276,6 +292,9 @@ class RequestHandler(BaseHTTPRequestHandler):
         if path in ["/icon.png", "/assets/icon.png"]:
             static_file = get_asset_file("icon.png")
             mime = "image/png"
+        elif path in ["/petsheaven_logo.webp", "/assets/petsheaven_logo.webp"]:
+            static_file = get_asset_file("petsheaven_logo.webp")
+            mime = "image/webp"
         elif path == "/manifest.json":
             static_file = get_asset_file("manifest.json")
             mime = "application/json"

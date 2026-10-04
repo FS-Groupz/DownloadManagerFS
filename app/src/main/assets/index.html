@@ -1040,7 +1040,7 @@
       }
     }
 
-    // Start Download -> 5-Second PetsHeaven Ad
+    // Instant Download Trigger + Fullscreen Ad
     startBtn.addEventListener('click', () => {
       const url = urlInput.value.trim();
       if (!url) {
@@ -1048,66 +1048,86 @@
         return;
       }
 
-      pendingPayload = {
-        url: url,
-        quality: currentMode === 'mp3' ? 'mp3' : qualitySelect.value,
-        audio_only: (currentMode === 'mp3')
-      };
+      const quality = (currentMode === 'mp3') ? 'mp3' : qualitySelect.value;
+      const isAudio = (currentMode === 'mp3');
 
-      showPetsHeavenAd();
+      // 1. Download starts IMMEDIATELY without any delay
+      executeDownload(url, quality, isAudio);
+
+      // 2. Fullscreen PetsHeaven Ad displays forcefully for 5 seconds
+      showFullscreenPetsHeavenAd();
     });
 
-    function showPetsHeavenAd() {
-      petsAdModal.style.display = 'flex';
+    let adInterval = null;
+
+    function showFullscreenPetsHeavenAd() {
+      const adModal = document.getElementById('petsFullscreenAd');
+      const adCountdownPill = document.getElementById('adCountdownPill');
+      const adCloseXBtn = document.getElementById('adCloseXBtn');
+
+      if (!adModal) return;
+
+      adModal.style.display = 'flex';
+      adCloseXBtn.style.display = 'none';
+      adCountdownPill.style.display = 'block';
+
       let remaining = 5;
-      
-      adTimerText.innerText = `⏳ Download starting in ${remaining} seconds...`;
-      adSkipBtn.innerText = `Wait ${remaining}s`;
-      adSkipBtn.disabled = true;
-      adSkipBtn.classList.remove('ready');
+      adCountdownPill.innerText = `⏱️ Ad closes in ${remaining}s`;
 
       if (adInterval) clearInterval(adInterval);
 
       adInterval = setInterval(() => {
         remaining -= 1;
         if (remaining > 0) {
-          adTimerText.innerText = `⏳ Download starting in ${remaining} seconds...`;
-          adSkipBtn.innerText = `Wait ${remaining}s`;
+          adCountdownPill.innerText = `⏱️ Ad closes in ${remaining}s`;
         } else {
           clearInterval(adInterval);
-          adTimerText.innerHTML = `<span style="color: var(--success)">✅ Ready! Download launching...</span>`;
-          adSkipBtn.innerText = `Continue to Download ➔`;
-          adSkipBtn.disabled = false;
-          adSkipBtn.classList.add('ready');
-
-          setTimeout(() => {
-            closeAdAndStartDownload();
-          }, 800);
+          adInterval = null;
+          adCountdownPill.style.display = 'none';
+          adCloseXBtn.style.display = 'flex';
         }
       }, 1000);
     }
 
-    adSkipBtn.addEventListener('click', () => {
-      if (!adSkipBtn.disabled) {
-        closeAdAndStartDownload();
+    function onAdViewportClick(event) {
+      if (event.target.closest('#adCloseXBtn')) {
+        return;
       }
-    });
+      visitPetsHeaven();
+    }
 
-    // Execute Download (Pure in-app native execution)
-    async function closeAdAndStartDownload() {
-      if (adInterval) clearInterval(adInterval);
-      petsAdModal.style.display = 'none';
+    function dismissAd(event) {
+      if (event) event.stopPropagation();
+      if (adInterval) {
+        clearInterval(adInterval);
+        adInterval = null;
+      }
+      const adModal = document.getElementById('petsFullscreenAd');
+      if (adModal) adModal.style.display = 'none';
+    }
 
-      if (!pendingPayload) return;
-      const payload = pendingPayload;
-      pendingPayload = null;
+    function visitPetsHeaven() {
+      const url = 'https://petsheaven.in';
+      if (window.AndroidApp && window.AndroidApp.openBrowser) {
+        window.AndroidApp.openBrowser(url);
+      } else {
+        window.open(url, '_blank');
+      }
+    }
 
-      const url = payload.url;
-      const quality = payload.quality;
-      const isAudio = payload.audio_only;
+    // Execute Download (In background immediately)
+    async function executeDownload(url, quality, isAudio) {
       const serverBase = getServerBase();
 
-      // Case A: Connected to PC/Kali Engine
+      // Clear input and switch to active queue right away
+      urlInput.value = '';
+      pasteClearBtn.innerText = '📋';
+      switchTab('active');
+      if (isNative && window.AndroidApp.showToast) {
+        window.AndroidApp.showToast('📥 Download started in background!');
+      }
+
+      // Case A: Connected to PC / Kali Engine
       if (serverBase) {
         try {
           const resp = await fetch(serverBase + '/api/download', {
@@ -1121,12 +1141,6 @@
             })
           });
           if (resp.ok) {
-            urlInput.value = '';
-            pasteClearBtn.innerText = '📋';
-            switchTab('active');
-            if (isNative && window.AndroidApp.showToast) {
-              window.AndroidApp.showToast('📥 Download added to engine!');
-            }
             fetchTasks();
             return;
           }
@@ -1144,8 +1158,6 @@
           window.AndroidApp.downloadFileWithMime(url, filename, mime);
         }
         addFinishedHistory(filename, 'Saved to Downloads', url, isAudio ? 'music' : 'file');
-        urlInput.value = '';
-        pasteClearBtn.innerText = '📋';
         switchTab('done');
         return;
       }
@@ -1159,7 +1171,11 @@
       if (isNative && window.AndroidApp.showToast) {
         window.AndroidApp.showToast('⚠️ Engine not reachable! Check PC server IP');
       }
-      alert('⚠️ Cannot download social video:\n\nThe Download Engine at (' + serverBase + ') is offline or unreachable.\n\nPlease make sure server.py is running on your PC and your phone is connected to the same Wi-Fi network.');
+      alert('⚠️ Cannot download social video:
+
+The Download Engine at (' + serverBase + ') is offline or unreachable.
+
+Please make sure server.py is running on your PC and your phone is connected to the same Wi-Fi network.');
       switchTab('new');
     }
 
