@@ -18,7 +18,7 @@ import webbrowser
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, unquote
 
-PORT = 5000
+PORT = int(os.environ.get("PORT", 5000))
 DOWNLOAD_DIR = os.path.join(os.path.expanduser("~"), "Downloads", "DownloadManagerFS")
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
