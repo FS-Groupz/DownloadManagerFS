@@ -25,17 +25,19 @@ A modern, high-speed, cross-platform video & audio downloader app for **Android*
 
 ---
 
-## 📦 Downloads & Releases (Latest: v1.2.2)
+## 📦 Direct Downloads & Releases
 
-Pre-built binaries and installation packages are available in the [`releases/`](releases/) folder:
+> [!TIP]
+> **Mobile Users:** Tap any of the direct download links below to start downloading immediately on your phone. If Chrome shows *"File might be harmful"*, tap **"Download anyway"**.
 
-| Platform | Download Link | Type |
+| Platform | Direct 1-Tap Download | Fast Raw Mirror |
 | :--- | :--- | :--- |
-| 📱 **Android** | [DownloadManagerFS-v1.2.2.apk](releases/DownloadManagerFS-v1.2.2.apk) | Signed Release APK (180 KB) |
-| 🐧 **Linux** | [DownloadManagerFS-Linux](releases/DownloadManagerFS-Linux) | Standalone Executable (9.9 MB) |
-| 🪟 **Windows** | [DownloadManagerFS-Windows.bat](releases/DownloadManagerFS-Windows.bat) | Batch Launcher / GitHub Release `.exe` |
+| 📱 **Android (v1.2.2 Recommended)** | [📥 **Download APK (v1.2.2)**](https://github.com/FS-Groupz/DownloadManagerFS/releases/download/v1.2.2/DownloadManagerFS-v1.2.2.apk) | [Raw Link](https://github.com/FS-Groupz/DownloadManagerFS/raw/main/releases/DownloadManagerFS-v1.2.2.apk) |
+| 📱 **Android (v1.2.1)** | [📥 **Download APK (v1.2.1)**](https://github.com/FS-Groupz/DownloadManagerFS/releases/download/v1.2.1/DownloadManagerFS-v1.2.1.apk) | [Raw Link](https://github.com/FS-Groupz/DownloadManagerFS/raw/main/releases/DownloadManagerFS-v1.2.1.apk) |
+| 🐧 **Linux** | [📥 **Download Linux Binary**](https://github.com/FS-Groupz/DownloadManagerFS/releases/download/v1.2.2/DownloadManagerFS-Linux) | [Raw Link](https://github.com/FS-Groupz/DownloadManagerFS/raw/main/releases/DownloadManagerFS-Linux) |
+| 🪟 **Windows** | [📥 **Download Launcher (.bat)**](https://github.com/FS-Groupz/DownloadManagerFS/releases/download/v1.2.2/DownloadManagerFS-Windows.bat) | [PowerShell Script](https://github.com/FS-Groupz/DownloadManagerFS/releases/download/v1.2.2/DownloadManagerFS-Windows.ps1) |
 
-Direct GitHub Release page: **[GitHub Releases v1.2.2](https://github.com/FS-Groupz/DownloadManagerFS/releases/tag/v1.2.2)**
+All versions are also published under **[GitHub Releases](https://github.com/FS-Groupz/DownloadManagerFS/releases)**.
 
 ---
 
