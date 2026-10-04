@@ -6,10 +6,10 @@ Official releases and portable launchers for **Android**, **Linux**, and **Windo
 
 ## 📱 Android (Mobile App)
 
-**File:** [`DownloadManagerFS-v1.2.0.apk`](DownloadManagerFS-v1.2.0.apk)
+**File:** [`DownloadManagerFS-v1.2.1.apk`](DownloadManagerFS-v1.2.1.apk)
 
 ### How to Install:
-1. Transfer the `.apk` file to your Android phone (or download directly from GitHub).
+1. Transfer the `.apk` file to your Android phone (or download directly from GitHub Releases).
 2. Tap the APK file to install (enable "Install from Unknown Sources" if prompted).
 3. Open **Download Manager FS** and start downloading!
 
@@ -36,7 +36,7 @@ chmod +x DownloadManagerFS-Linux
 **Files:**
 - **Quick Launcher:** [`DownloadManagerFS-Windows.bat`](DownloadManagerFS-Windows.bat)
 - **PowerShell Runner:** [`DownloadManagerFS-Windows.ps1`](DownloadManagerFS-Windows.ps1)
-- **Direct Native `.exe`:** Available under the [GitHub Releases tab](../../releases).
+- **Direct Release:** Available under the [GitHub Releases tab](../../releases/tag/v1.2.1).
 
 ### How to Run:
 1. Double-click **`DownloadManagerFS-Windows.bat`**.

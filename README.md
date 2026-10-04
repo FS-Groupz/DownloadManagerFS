@@ -7,12 +7,14 @@ A modern, high-speed, cross-platform video & audio downloader app for **Android*
 ## ✨ Features
 
 - ⚡ **Ultra-Fast Downloads**: Supports multi-threaded downloading with real-time speed, ETA, and progress indicators.
-- 📺 **Wide Platform Support**:
+- 📺 **Wide Platform Support & Multi-Dimensional Quality**:
   - **YouTube** (Shorts, 1080p, 4K, 60fps)
   - **Instagram** (Reels, Posts, Stories)
   - **Facebook** (Reels & Public HD Videos)
   - **TikTok** & 1000+ other supported platforms via `yt-dlp`
+  - Accurate resolution matching for both horizontal and vertical videos (360p, 480p, 720p, 1080p, Best).
 - 🎵 **MP3 Audio Extraction**: Extract clean, high-bitrate MP3 audio from any video link with a single tap.
+- 🐾 **PetsHeaven Sponsored Integration**: Instant background download start paired with a 5-second fullscreen showcase.
 - 📱 **Native Android Integration**:
   - Official release APK with Android `DownloadManager` support.
   - Automatic download notifications and direct **"▶ Open / Play"** into default Android Video Players.
@@ -23,24 +25,24 @@ A modern, high-speed, cross-platform video & audio downloader app for **Android*
 
 ---
 
-## 📦 Downloads & Releases
+## 📦 Downloads & Releases (Latest: v1.2.1)
 
 Pre-built binaries and installation packages are available in the [`releases/`](releases/) folder:
 
 | Platform | Download Link | Type |
 | :--- | :--- | :--- |
-| **Android** | [DownloadManagerFS-v1.2.0.apk](releases/DownloadManagerFS-v1.2.0.apk) | Signed Release APK (143 KB) |
-| **Linux** | [DownloadManagerFS-Linux](releases/DownloadManagerFS-Linux) | Standalone Executable (9.6 MB) |
-| **Windows** | [DownloadManagerFS-Windows.bat](releases/DownloadManagerFS-Windows.bat) | Batch Launcher / GitHub Release `.exe` |
+| 📱 **Android** | [DownloadManagerFS-v1.2.1.apk](releases/DownloadManagerFS-v1.2.1.apk) | Signed Release APK (180 KB) |
+| 🐧 **Linux** | [DownloadManagerFS-Linux](releases/DownloadManagerFS-Linux) | Standalone Executable (9.9 MB) |
+| 🪟 **Windows** | [DownloadManagerFS-Windows.bat](releases/DownloadManagerFS-Windows.bat) | Batch Launcher / GitHub Release `.exe` |
 
-For automated continuous releases, visit the [GitHub Releases](https://github.com/ZeeshanAhmad-FS/DownloadManagerFS/releases) page.
+Direct GitHub Release page: **[GitHub Releases v1.2.1](https://github.com/ZeeshanAhmad-FS/DownloadManagerFS/releases/tag/v1.2.1)**
 
 ---
 
 ## 🚀 Quick Start Guide
 
 ### 📱 Android
-1. Download [`releases/DownloadManagerFS-v1.2.0.apk`](releases/DownloadManagerFS-v1.2.0.apk).
+1. Download [`releases/DownloadManagerFS-v1.2.1.apk`](releases/DownloadManagerFS-v1.2.1.apk).
 2. Install the APK on your device.
 3. If using in standalone Wi-Fi engine mode, ensure `server.py` is running on your PC or local server.
 
@@ -63,13 +65,13 @@ chmod +x releases/DownloadManagerFS-Linux
 ```
 DownloadManagerFS/
 ├── app/                      # Android Native Application
-│   ├── src/main/assets/      # Web UI assets (HTML, CSS, JS)
+│   ├── src/main/assets/      # Web UI assets (HTML, CSS, JS, logo)
 │   ├── src/main/java/        # Java Native Android Bridge
 │   ├── build.gradle          # Android Gradle build & signing config
 │   └── release.keystore      # Release signing keystore
 ├── assets/                   # Bundled UI assets for desktop executable
 ├── releases/                 # Packaged Release Binaries
-│   ├── DownloadManagerFS-v1.2.0.apk
+│   ├── DownloadManagerFS-v1.2.1.apk
 │   ├── DownloadManagerFS-Linux
 │   ├── DownloadManagerFS-Windows.bat
 │   ├── DownloadManagerFS-Windows.ps1
