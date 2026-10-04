@@ -35,7 +35,7 @@ Pre-built binaries and installation packages are available in the [`releases/`](
 | 🐧 **Linux** | [DownloadManagerFS-Linux](releases/DownloadManagerFS-Linux) | Standalone Executable (9.9 MB) |
 | 🪟 **Windows** | [DownloadManagerFS-Windows.bat](releases/DownloadManagerFS-Windows.bat) | Batch Launcher / GitHub Release `.exe` |
 
-Direct GitHub Release page: **[GitHub Releases v1.2.1](https://github.com/ZeeshanAhmad-FS/DownloadManagerFS/releases/tag/v1.2.1)**
+Direct GitHub Release page: **[GitHub Releases v1.2.1](https://github.com/FS-Groupz/DownloadManagerFS/releases/tag/v1.2.1)**
 
 ---
 
