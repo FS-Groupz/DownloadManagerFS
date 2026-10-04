@@ -1,0 +1,46 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'org.fsgroupz.downloadmanagerfs'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "org.fsgroupz.downloadmanagerfs"
+        minSdk 21
+        targetSdk 34
+        versionCode 2
+        versionName "1.2.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('release.keystore')
+            storePassword 'downloadmanagerfs'
+            keyAlias 'downloadmanagerfs'
+            keyPassword 'downloadmanagerfs'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            debuggable true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // Pure, zero-dependency Android SDK
+}

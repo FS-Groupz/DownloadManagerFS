@@ -1,0 +1,32 @@
+# Android Studio & Gradle
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/app/build
+/captures
+.externalNativeBuild
+.cxx
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.venv
+env/
+venv/
+
+# PyInstaller Build Caches (releases/ folder is preserved)
+dist/
+*.spec
+
+# Keystores & sensitive keys (except release.keystore for CI/CD)
+*.jks
+*.keystore
+!app/release.keystore
+
+# Keep releases folder
+!releases/

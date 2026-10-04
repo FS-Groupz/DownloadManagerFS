@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Download Manager FS - Universal & Social Downloader</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#89b4fa">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <style>
+    :root {
+      --bg: #11111b;
+      --card-bg: #1e1e2e;
+      --surface: #313244;
+      --primary: #89b4fa;
+      --accent: #fab387;
+      --success: #a6e3a1;
+      --danger: #f38ba8;
+      --text: #cdd6f4;
+      --subtext: #a6adc8;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+    header {
+      background: #181825;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-hamburger {
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 1.25rem;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    .btn-hamburger:active {
+      background: var(--primary);
+      color: #11111b;
+    }
+    .logo-img {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+    .header-title-box h1 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.15;
+    }
+    .header-title-box .subtitle {
+      font-size: 0.7rem;
+      color: var(--subtext);
+    }
+    .header-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .btn-settings-icon {
+      background: var(--surface);
+      border: none;
+      color: var(--subtext);
+      font-size: 1.1rem;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Top Navigation Tabs */
+    .nav-tabs {
+      display: flex;
+      background: #181825;
+      border-bottom: 1px solid var(--surface);
+      padding: 0 10px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 12px 6px;
+      text-align: center;
+      background: transparent;
+      border: none;
+      color: var(--subtext);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    .badge-count {
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+    .tab-btn.active .badge-count {
+      background: var(--primary);
+      color: #11111b;
+      font-weight: 700;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 14px;
+      width: 100%;
+      flex: 1;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+      border: 1px solid var(--surface);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .input-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .supported-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 12px;
+    }
+    .badge {
+      font-size: 0.68rem;
+      padding: 3px 7px;
+      border-radius: 4px;
+      background: var(--surface);
+      color: var(--subtext);
+    }
+    .badge.yt { color: #ff5555; }
+    .badge.ig { color: #ff79c6; }
+    .badge.fb { color: #8be9fd; }
+
+    .url-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+    }
+    .input-wrapper {
+      position: relative;
+      width: 100%;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 13px 40px 13px 14px;
+      border-radius: 8px;
+      background: #11111b;
+      border: 1px solid var(--surface);
+      color: #fff;
+      font-size: 0.92rem;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus {
+      border-color: var(--primary);
+    }
+    .btn-paste-clear {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: var(--subtext);
+      font-size: 1rem;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+
+    /* Format & Resolution Selector - Guaranteed NO Overflow */
+    .format-toggle-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+    }
+    .format-pill {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      border-radius: 8px;
+      background: #11111b;
+      border: 1px solid var(--surface);
+      color: var(--subtext);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .format-pill.active {
+      background: rgba(137, 180, 250, 0.15);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    .format-pill.active.mp3-active {
+      background: rgba(250, 179, 135, 0.15);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .resolution-select-box {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
+    }
+    .res-label {
+      font-size: 0.78rem;
+      color: var(--subtext);
+      font-weight: 600;
+    }
+    select {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #11111b;
+      border: 1px solid var(--surface);
+      color: var(--text);
+      font-size: 0.88rem;
+      outline: none;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .btn-download {
+      background: linear-gradient(135deg, var(--primary), #b4befe);
+      color: #11111b;
+      border: none;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 0.98rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      transition: transform 0.15s, opacity 0.2s;
+    }
+    .btn-download.mp3-mode {
+      background: linear-gradient(135deg, var(--accent), #f9e2af);
+    }
+    .btn-download:active {
+      transform: scale(0.99);
+      opacity: 0.9;
+    }
+
+    /* Views */
+    .tab-view {
+      display: none;
+    }
+    .tab-view.active {
+      display: block;
+    }
+
+    /* Task Item Cards */
+    .task-item {
+      background: var(--card-bg);
+      border: 1px solid var(--surface);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .task-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .task-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #fff;
+      word-break: break-all;
+      flex: 1;
+      padding-right: 8px;
+    }
+    .task-status-tag {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      background: var(--surface);
+      white-space: nowrap;
+    }
+    .status-Downloading { background: #313244; color: var(--primary); }
+    .status-Completed { background: rgba(166, 227, 161, 0.2); color: var(--success); }
+    .status-Failed { background: rgba(243, 139, 168, 0.2); color: var(--danger); }
+    .status-Paused { background: rgba(249, 226, 175, 0.2); color: var(--accent); }
+    .progress-bar-bg {
+      width: 100%;
+      height: 7px;
+      background: #11111b;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .task-details {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.74rem;
+      color: var(--subtext);
+    }
+    .task-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      justify-content: flex-end;
+      align-items: center;
+    }
+    .btn-action {
+      background: var(--surface);
+      color: var(--text);
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+    }
+    .btn-save-phone {
+      background: linear-gradient(135deg, #a6e3a1, #89b4fa);
+      color: #11111b !important;
+      font-weight: 700;
+    }
+    .btn-open-file {
+      background: linear-gradient(135deg, #89b4fa, #cba6f7);
+      color: #11111b !important;
+      font-weight: 700;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 36px 16px;
+      color: var(--subtext);
+      font-size: 0.88rem;
+    }
+
+    /* Side Navigation Drawer */
+    .drawer-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+    }
+    .side-drawer {
+      position: fixed;
+      top: 0;
+      left: -280px;
+      width: 270px;
+      height: 100%;
+      background: #181825;
+      border-right: 1px solid var(--surface);
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      transition: left 0.3s ease;
+      box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+    }
+    .side-drawer.open {
+      left: 0;
+    }
+    .drawer-header {
+      padding: 20px 16px;
+      background: #11111b;
+      border-bottom: 1px solid var(--surface);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .drawer-items {
+      list-style: none;
+      padding: 12px 8px;
+      flex: 1;
+      overflow-y: auto;
+    }
+    .drawer-item {
+      padding: 12px 14px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      margin-bottom: 4px;
+      transition: background 0.15s;
+    }
+    .drawer-item:active, .drawer-item.active {
+      background: var(--surface);
+      color: var(--primary);
+    }
+    .drawer-item.sponsor-item {
+      color: var(--accent);
+      background: rgba(250, 179, 135, 0.1);
+      border: 1px dashed var(--accent);
+      margin-top: 10px;
+    }
+    .drawer-footer {
+      padding: 14px;
+      border-top: 1px solid var(--surface);
+      font-size: 0.75rem;
+      color: var(--subtext);
+      text-align: center;
+    }
+
+    /* PetsHeaven 5-Second Sponsored Ad Modal */
+    .ad-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(8px);
+      z-index: 1100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .ad-content {
+      background: #1e1e2e;
+      border: 2px solid var(--accent);
+      border-radius: 16px;
+      max-width: 440px;
+      width: 100%;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      animation: popIn 0.3s ease;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .ad-badge {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--subtext);
+      margin-bottom: 8px;
+    }
+    .ad-brand {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    .ad-tagline {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+    .ad-desc {
+      font-size: 0.85rem;
+      color: var(--text);
+      line-height: 1.4;
+      margin-bottom: 20px;
+    }
+    .ad-visit-btn {
+      display: block;
+      background: linear-gradient(135deg, #fab387, #f38ba8);
+      color: #11111b;
+      font-weight: 700;
+      padding: 14px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 1rem;
+      margin-bottom: 16px;
+    }
+    .ad-timer-text {
+      font-size: 0.85rem;
+      color: #f9e2af;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    .ad-skip-btn {
+      background: var(--surface);
+      color: var(--subtext);
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .ad-skip-btn.ready {
+      background: var(--primary);
+      color: #11111b;
+      cursor: pointer;
+      opacity: 1;
+      font-weight: 600;
+    }
+
+    /* Clean Mobile Settings Modal */
+    .config-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1050;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .config-content {
+      background: #1e1e2e;
+      border: 1px solid var(--surface);
+      border-radius: 14px;
+      max-width: 440px;
+      width: 100%;
+      padding: 20px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .setting-row {
+      margin-bottom: 14px;
+    }
+    .setting-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .setting-subtext {
+      font-size: 0.72rem;
+      color: var(--subtext);
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="header-left">
+      <button id="menuBtn" class="btn-hamburger" onclick="toggleDrawer()" title="Menu">☰</button>
+      <img src="/icon.png" onerror="this.src='icon.png'" alt="FS Groupz" class="logo-img">
+      <div class="header-title-box">
+        <h1>Download Manager FS</h1>
+        <div class="subtitle">Universal Fast Downloader</div>
+      </div>
+    </div>
+    <div class="header-actions" style="display: flex; align-items: center; gap: 6px;">
+      <span id="engineStatusBadge" onclick="openSettingsModal()" style="font-size: 0.7rem; font-weight: 600; padding: 4px 8px; border-radius: 12px; background: rgba(166, 173, 200, 0.15); color: var(--subtext); cursor: pointer; transition: all 0.3s;" title="Download Engine Status">Connecting...</span>
+      <button id="installBtn" class="btn-action" style="display:none;" onclick="installPwa()">📲 Install</button>
+      <button class="btn-settings-icon" onclick="openSettingsModal()" title="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <!-- Top Navigation Tabs -->
+  <div class="nav-tabs">
+    <button class="tab-btn active" id="tabNewBtn" onclick="switchTab('new')">
+      🔗 New Link
+    </button>
+    <button class="tab-btn" id="tabActiveBtn" onclick="switchTab('active')">
+      📥 Queue <span class="badge-count" id="activeBadge">0</span>
+    </button>
+    <button class="tab-btn" id="tabDoneBtn" onclick="switchTab('done')">
+      📁 Finished <span class="badge-count" id="doneBadge">0</span>
+    </button>
+  </div>
+
+  <div class="container">
+
+    <!-- View 1: New Download -->
+    <div class="tab-view active" id="viewNew">
+      <div class="card">
+        <div class="input-title">🔗 Enter Link or Share from YouTube / Instagram</div>
+        
+        <div class="supported-badges">
+          <span class="badge yt">▶ YouTube (Video/MP3)</span>
+          <span class="badge ig">📸 Instagram (Reels/Post)</span>
+          <span class="badge fb">📘 Facebook Video</span>
+          <span class="badge">📦 Direct Files (Zip, APK, PDF)</span>
+        </div>
+
+        <div class="url-form">
+          <div class="input-wrapper">
+            <input type="text" id="urlInput" placeholder="Paste link here (or Share from YouTube/Insta)" required autocomplete="off">
+            <button class="btn-paste-clear" id="pasteClearBtn" onclick="handlePasteOrClear()">📋</button>
+          </div>
+          
+          <!-- Video vs Only MP3 Mode Toggles -->
+          <div class="format-toggle-row">
+            <div class="format-pill active" id="videoPill" onclick="setDownloadMode('video')">
+              🎥 Video
+            </div>
+            <div class="format-pill" id="mp3Pill" onclick="setDownloadMode('mp3')">
+              🎵 Only MP3
+            </div>
+          </div>
+
+          <!-- Resolution Selector (Guaranteed Responsive NO Overflow) -->
+          <div class="resolution-select-box" id="resBox">
+            <span class="res-label">Video Quality / Resolution:</span>
+            <select id="qualitySelect">
+              <option value="1080p">🎥 1080p (Full HD)</option>
+              <option value="720p" selected>🎥 720p (HD Quality)</option>
+              <option value="480p">🎥 480p (Standard Quality)</option>
+              <option value="360p">🎥 360p (Data Saver)</option>
+              <option value="best">🎥 Best Available Quality</option>
+            </select>
+          </div>
+
+          <button class="btn-download" id="startBtn">
+            ⚡ Start Fast Download
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Recent Download Banner -->
+      <div id="quickRecentBox" style="display:none;"></div>
+    </div>
+
+    <!-- View 2: Active Queue -->
+    <div class="tab-view" id="viewActive">
+      <div class="section-header" style="margin-top: 0;">
+        <span>Active & Paused Downloads</span>
+        <span id="speedIndicator" style="font-size: 0.8rem; color: var(--primary); font-weight: 600;">0 KB/s</span>
+      </div>
+      <div id="activeTasksList">
+        <div class="empty-state">No downloads active right now.</div>
+      </div>
+    </div>
+
+    <!-- View 3: Finished / Downloaded Files -->
+    <div class="tab-view" id="viewDone">
+      <div class="section-header" style="margin-top: 0; display:flex; justify-content:space-between; align-items:center;">
+        <span>Downloaded Files</span>
+        <button class="btn-action" onclick="openStorageDir()" style="font-size:0.75rem;">📂 Open Folder</button>
+      </div>
+      <div id="finishedTasksList">
+        <div class="empty-state">No downloaded files yet.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Side Navigation Drawer -->
+  <div class="drawer-backdrop" id="drawerBackdrop" onclick="toggleDrawer()"></div>
+  <div class="side-drawer" id="sideDrawer">
+    <div class="drawer-header">
+      <img src="/icon.png" onerror="this.src='icon.png'" alt="FS Groupz" style="width: 42px; height: 42px; border-radius: 10px;">
+      <div>
+        <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">Download Manager FS</div>
+        <div style="font-size: 0.72rem; color: var(--primary);">v1.2.0 • FS Groupz</div>
+      </div>
+    </div>
+    <ul class="drawer-items">
+      <li class="drawer-item" onclick="navigateFromDrawer('new')">
+        <span>🔗</span> New Download
+      </li>
+      <li class="drawer-item" onclick="navigateFromDrawer('active')">
+        <span>📥</span> Active Queue (<span id="drawerActiveCount">0</span>)
+      </li>
+      <li class="drawer-item" onclick="navigateFromDrawer('done')">
+        <span>📁</span> Downloaded Files (<span id="drawerDoneCount">0</span>)
+      </li>
+      <li class="drawer-item" onclick="navigateFromDrawer('settings')">
+        <span>⚙️</span> Settings & Preferences
+      </li>
+      <li class="drawer-item sponsor-item" onclick="openPetsHeaven()">
+        <span>🐾</span> PetsHeaven Pet Store ➔
+      </li>
+    </ul>
+    <div class="drawer-footer">
+      Developed with ❤️ by FS Groupz<br>
+      Organization: FS-Groupz
+    </div>
+  </div>
+
+  <!-- PetsHeaven 5-Second Sponsored Ad Modal -->
+  <div class="ad-modal" id="petsAdModal">
+    <div class="ad-content">
+      <div class="ad-badge">⭐ SPONSORED ANNOUNCEMENT ⭐</div>
+      <div class="ad-brand">🐾 PetsHeaven</div>
+      <div class="ad-tagline">Your One-Stop Pet Paradise</div>
+      <div class="ad-desc">
+        Premium quality food, treats, toys, and grooming essentials for your lovely pets! Express home delivery across India.
+      </div>
+      
+      <a href="https://petsheaven.in" target="_blank" class="ad-visit-btn" id="adVisitLink" onclick="onAdClick(event)">
+        🛍️ Shop at petsheaven.in Now ➔
+      </a>
+
+      <div class="ad-timer-text" id="adTimerText">
+        ⏳ Download starting in 5 seconds...
+      </div>
+
+      <button class="ad-skip-btn" id="adSkipBtn" disabled>
+        Wait 5s
+      </button>
+    </div>
+  </div>
+
+  <!-- Clean, Meaningful Mobile Settings Modal -->
+  <div class="config-modal" id="settingsModal">
+    <div class="config-content">
+      <h3 style="margin-bottom: 12px; color: #fff; display:flex; justify-content:space-between; align-items:center;">
+        <span>⚙️ Preferences</span>
+        <button onclick="closeSettingsModal()" style="background:none; border:none; color:var(--subtext); font-size:1.2rem; cursor:pointer;">✖</button>
+      </h3>
+
+      <div class="setting-row">
+        <div class="setting-label">📂 Download Storage Path</div>
+        <div class="setting-subtext">Files are saved automatically to your device:</div>
+        <input type="text" value="Internal Storage / Download" disabled style="background:#181825; color:var(--primary); font-weight:600;">
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">🎥 Default Video Resolution</div>
+        <div class="setting-subtext">Preferred quality for YouTube & social videos:</div>
+        <select id="prefQuality" onchange="savePreferences()">
+          <option value="1080p">1080p (Full HD)</option>
+          <option value="720p" selected>720p (HD - Fast & Clear)</option>
+          <option value="480p">480p (Standard)</option>
+          <option value="360p">360p (Data Saver)</option>
+        </select>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">⚡ Multi-Threaded Connections</div>
+        <div class="setting-subtext">Number of parallel speed streams per file:</div>
+        <select id="prefThreads" onchange="savePreferences()">
+          <option value="8" selected>8 Streams (Fast)</option>
+          <option value="16">16 Streams (Turbo Maximum)</option>
+          <option value="4">4 Streams (Standard)</option>
+        </select>
+      </div>
+
+      <div class="setting-row" style="margin-top: 18px;">
+        <button class="btn-action" onclick="clearFinishedHistory()" style="color:var(--danger); width:100%; justify-content:center; padding:10px;">
+          🗑️ Clear Downloaded History List
+        </button>
+      </div>
+
+      <details style="margin-top: 14px; font-size: 0.78rem; color: var(--subtext);">
+        <summary style="cursor: pointer; padding: 4px 0; color: var(--primary);">🖥️ Optional: Connect PC/Laptop Turbo Engine</summary>
+        <div style="margin-top: 8px;">
+          <p style="margin-bottom: 6px;">If running Download Manager FS on your PC/Kali on the same Wi-Fi, enter IP to link:</p>
+          <input type="text" id="serverInput" placeholder="http://192.168.1.15:8080" style="margin-bottom: 6px;">
+          <div style="display:flex; gap:6px;">
+            <button class="btn-action btn-save-phone" onclick="saveServerLink()">Connect PC</button>
+            <button class="btn-action" onclick="clearServerLink()">Standalone</button>
+          </div>
+        </div>
+      </details>
+
+      <div style="margin-top: 18px; text-align: center; font-size: 0.75rem; color: var(--subtext);">
+        Download Manager FS v1.2.0 • FS Groupz<br>
+        Developed by Zeeshan Ahmad
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Environment Detection
+    const isNative = (typeof window.AndroidApp !== 'undefined') && (typeof window.AndroidApp.isNativeApp === 'function' && window.AndroidApp.isNativeApp());
+
+    function getServerBase() {
+      if (window.location.protocol.startsWith('http')) {
+        return window.location.origin;
+      }
+      return localStorage.getItem('fs_server_url') || 'http://192.168.0.111:5000';
+    }
+
+    // Elements
+    const urlInput = document.getElementById('urlInput');
+    const startBtn = document.getElementById('startBtn');
+    const videoPill = document.getElementById('videoPill');
+    const mp3Pill = document.getElementById('mp3Pill');
+    const resBox = document.getElementById('resBox');
+    const qualitySelect = document.getElementById('qualitySelect');
+    const pasteClearBtn = document.getElementById('pasteClearBtn');
+    const speedIndicator = document.getElementById('speedIndicator');
+
+    const activeTasksList = document.getElementById('activeTasksList');
+    const finishedTasksList = document.getElementById('finishedTasksList');
+    const activeBadge = document.getElementById('activeBadge');
+    const doneBadge = document.getElementById('doneBadge');
+    const drawerActiveCount = document.getElementById('drawerActiveCount');
+    const drawerDoneCount = document.getElementById('drawerDoneCount');
+
+    // PetsHeaven Ad Elements
+    const petsAdModal = document.getElementById('petsAdModal');
+    const adTimerText = document.getElementById('adTimerText');
+    const adSkipBtn = document.getElementById('adSkipBtn');
+
+    let currentMode = 'video'; // 'video' or 'mp3'
+    let pendingPayload = null;
+    let adInterval = null;
+
+    // Load persisted completed tasks
+    let completedHistory = [];
+    try {
+      completedHistory = JSON.parse(localStorage.getItem('fs_completed_history') || '[]');
+    } catch (e) {
+      completedHistory = [];
+    }
+
+    let localActiveTasks = [];
+
+    // Navigation & Tabs
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+
+      if (tabId === 'new') {
+        document.getElementById('tabNewBtn').classList.add('active');
+        document.getElementById('viewNew').classList.add('active');
+      } else if (tabId === 'active') {
+        document.getElementById('tabActiveBtn').classList.add('active');
+        document.getElementById('viewActive').classList.add('active');
+      } else if (tabId === 'done') {
+        document.getElementById('tabDoneBtn').classList.add('active');
+        document.getElementById('viewDone').classList.add('active');
+      }
+    }
+
+    function toggleDrawer() {
+      const drawer = document.getElementById('sideDrawer');
+      const backdrop = document.getElementById('drawerBackdrop');
+      if (drawer.classList.contains('open')) {
+        drawer.classList.remove('open');
+        backdrop.style.display = 'none';
+      } else {
+        drawer.classList.add('open');
+        backdrop.style.display = 'block';
+      }
+    }
+
+    function navigateFromDrawer(tabId) {
+      toggleDrawer();
+      if (tabId === 'settings') {
+        openSettingsModal();
+      } else {
+        switchTab(tabId);
+      }
+    }
+
+    function openPetsHeaven() {
+      toggleDrawer();
+      if (isNative && window.AndroidApp.openBrowser) {
+        window.AndroidApp.openBrowser('https://petsheaven.in');
+      } else {
+        window.open('https://petsheaven.in', '_blank');
+      }
+    }
+
+    function openStorageDir() {
+      if (isNative && window.AndroidApp.openDownloadsFolder) {
+        window.AndroidApp.openDownloadsFolder();
+      } else {
+        alert('Files are stored in your device Downloads folder!');
+      }
+    }
+
+    // Format Mode Toggle
+    function setDownloadMode(mode) {
+      currentMode = mode;
+      if (mode === 'mp3') {
+        mp3Pill.classList.add('active', 'mp3-active');
+        videoPill.classList.remove('active');
+        resBox.style.display = 'none';
+        startBtn.classList.add('mp3-mode');
+        startBtn.innerHTML = '🎵 Download Only MP3 (Audio)';
+      } else {
+        videoPill.classList.add('active');
+        mp3Pill.classList.remove('active', 'mp3-active');
+        resBox.style.display = 'flex';
+        startBtn.classList.remove('mp3-mode');
+        const qText = qualitySelect.options[qualitySelect.selectedIndex].text.split('(')[0].trim();
+        startBtn.innerHTML = `⚡ Download Video (${qText})`;
+      }
+    }
+
+    qualitySelect.addEventListener('change', () => {
+      if (currentMode === 'video') {
+        const qText = qualitySelect.options[qualitySelect.selectedIndex].text.split('(')[0].trim();
+        startBtn.innerHTML = `⚡ Download Video (${qText})`;
+      }
+    });
+
+    // Paste or Clear Button in Input
+    async function handlePasteOrClear() {
+      if (urlInput.value) {
+        urlInput.value = '';
+        pasteClearBtn.innerText = '📋';
+      } else {
+        try {
+          const text = await navigator.clipboard.readText();
+          if (text) {
+            urlInput.value = text.trim();
+            pasteClearBtn.innerText = '✖';
+            autoDetectUrl(text);
+          }
+        } catch (e) {
+          urlInput.focus();
+        }
+      }
+    }
+
+    urlInput.addEventListener('input', () => {
+      pasteClearBtn.innerText = urlInput.value ? '✖' : '📋';
+      autoDetectUrl(urlInput.value);
+    });
+
+    function autoDetectUrl(url) {
+      if (!url) return;
+      const u = url.toLowerCase();
+      if (u.endsWith('.mp3') || u.endsWith('.m4a') || u.endsWith('.wav')) {
+        setDownloadMode('mp3');
+      }
+    }
+
+    // Android Share Sheet Receiver
+    window.onSharedUrlReceived = function(sharedUrl) {
+      if (!sharedUrl) return;
+      urlInput.value = sharedUrl;
+      pasteClearBtn.innerText = '✖';
+      switchTab('new');
+      if (isNative && window.AndroidApp.showToast) {
+        window.AndroidApp.showToast('🔗 Video Link Received!');
+      }
+      autoDetectUrl(sharedUrl);
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (isNative && window.AndroidApp.getPendingSharedUrl) {
+        const pending = window.AndroidApp.getPendingSharedUrl();
+        if (pending) window.onSharedUrlReceived(pending);
+      }
+      loadPreferences();
+      renderTasks();
+    });
+
+    function isSocialMedia(url) {
+      if (!url) return false;
+      const s = url.toLowerCase();
+      return s.includes('youtube.com') || s.includes('youtu.be') ||
+             s.includes('instagram.com') || s.includes('facebook.com') ||
+             s.includes('fb.watch') || s.includes('tiktok.com') ||
+             s.includes('twitter.com') || s.includes('x.com');
+    }
+
+    // Ad Click Handler
+    function onAdClick(e) {
+      if (isNative && window.AndroidApp.openBrowser) {
+        e.preventDefault();
+        window.AndroidApp.openBrowser('https://petsheaven.in');
+      }
+    }
+
+    // Start Download -> 5-Second PetsHeaven Ad
+    startBtn.addEventListener('click', () => {
+      const url = urlInput.value.trim();
+      if (!url) {
+        alert('Please paste a download link or share a video from YouTube / Instagram!');
+        return;
+      }
+
+      pendingPayload = {
+        url: url,
+        quality: currentMode === 'mp3' ? 'mp3' : qualitySelect.value,
+        audio_only: (currentMode === 'mp3')
+      };
+
+      showPetsHeavenAd();
+    });
+
+    function showPetsHeavenAd() {
+      petsAdModal.style.display = 'flex';
+      let remaining = 5;
+      
+      adTimerText.innerText = `⏳ Download starting in ${remaining} seconds...`;
+      adSkipBtn.innerText = `Wait ${remaining}s`;
+      adSkipBtn.disabled = true;
+      adSkipBtn.classList.remove('ready');
+
+      if (adInterval) clearInterval(adInterval);
+
+      adInterval = setInterval(() => {
+        remaining -= 1;
+        if (remaining > 0) {
+          adTimerText.innerText = `⏳ Download starting in ${remaining} seconds...`;
+          adSkipBtn.innerText = `Wait ${remaining}s`;
+        } else {
+          clearInterval(adInterval);
+          adTimerText.innerHTML = `<span style="color: var(--success)">✅ Ready! Download launching...</span>`;
+          adSkipBtn.innerText = `Continue to Download ➔`;
+          adSkipBtn.disabled = false;
+          adSkipBtn.classList.add('ready');
+
+          setTimeout(() => {
+            closeAdAndStartDownload();
+          }, 800);
+        }
+      }, 1000);
+    }
+
+    adSkipBtn.addEventListener('click', () => {
+      if (!adSkipBtn.disabled) {
+        closeAdAndStartDownload();
+      }
+    });
+
+    // Execute Download (Pure in-app native execution)
+    async function closeAdAndStartDownload() {
+      if (adInterval) clearInterval(adInterval);
+      petsAdModal.style.display = 'none';
+
+      if (!pendingPayload) return;
+      const payload = pendingPayload;
+      pendingPayload = null;
+
+      const url = payload.url;
+      const quality = payload.quality;
+      const isAudio = payload.audio_only;
+      const serverBase = getServerBase();
+
+      // Case A: Connected to PC/Kali Engine
+      if (serverBase) {
+        try {
+          const resp = await fetch(serverBase + '/api/download', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              url: url,
+              quality: quality,
+              audio_only: isAudio,
+              segments: parseInt(localStorage.getItem('fs_pref_threads') || '8')
+            })
+          });
+          if (resp.ok) {
+            urlInput.value = '';
+            pasteClearBtn.innerText = '📋';
+            switchTab('active');
+            if (isNative && window.AndroidApp.showToast) {
+              window.AndroidApp.showToast('📥 Download added to engine!');
+            }
+            fetchTasks();
+            return;
+          }
+        } catch (e) {
+          console.warn('Server fetch note, continuing in standalone mode:', e);
+        }
+      }
+
+      // Case B: Standalone Direct File
+      const isSocial = isSocialMedia(url);
+      if (!isSocial) {
+        const filename = guessFilename(url);
+        const mime = isAudio ? 'audio/mpeg' : (filename.endsWith('.mp4') ? 'video/mp4' : '');
+        if (isNative && window.AndroidApp.downloadFileWithMime) {
+          window.AndroidApp.downloadFileWithMime(url, filename, mime);
+        }
+        addFinishedHistory(filename, 'Saved to Downloads', url, isAudio ? 'music' : 'file');
+        urlInput.value = '';
+        pasteClearBtn.innerText = '📋';
+        switchTab('done');
+        return;
+      }
+
+      // Case C: YouTube / Social Media in Mobile App
+      handleSocialMediaDownload(url, quality, isAudio);
+    }
+
+    async function handleSocialMediaDownload(url, quality, isAudio) {
+      const serverBase = getServerBase();
+      if (isNative && window.AndroidApp.showToast) {
+        window.AndroidApp.showToast('⚠️ Engine not reachable! Check PC server IP');
+      }
+      alert('⚠️ Cannot download social video:\n\nThe Download Engine at (' + serverBase + ') is offline or unreachable.\n\nPlease make sure server.py is running on your PC and your phone is connected to the same Wi-Fi network.');
+      switchTab('new');
+    }
+
+    function addFinishedHistory(filename, size, url, type) {
+      completedHistory.unshift({
+        id: 'done_' + Date.now(),
+        filename: filename,
+        size: (size && size !== '0 B') ? size : 'Saved in Downloads',
+        url: url,
+        type: type || 'video',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+      try {
+        localStorage.setItem('fs_completed_history', JSON.stringify(completedHistory.slice(0, 100)));
+      } catch (e) {}
+      renderTasks();
+    }
+
+    function clearFinishedHistory() {
+      if (confirm('Clear all downloaded history?')) {
+        completedHistory = [];
+        localStorage.removeItem('fs_completed_history');
+        renderTasks();
+        closeSettingsModal();
+      }
+    }
+
+    function guessFilename(url) {
+      try {
+        const u = new URL(url);
+        const parts = u.pathname.split('/').filter(Boolean);
+        if (parts.length > 0) {
+          const last = parts[parts.length - 1];
+          if (last.includes('.')) return decodeURIComponent(last);
+        }
+      } catch (e) {}
+      return 'download_' + Date.now();
+    }
+
+    // Polling Server Tasks (if connected to PC)
+    let serverTasks = [];
+
+    function fetchTasks() {
+      const serverBase = getServerBase();
+      if (!serverBase) {
+        renderTasks();
+        return;
+      }
+
+      fetch(serverBase + '/api/tasks')
+        .then(r => r.json())
+        .then(data => {
+          serverTasks = data.tasks || [];
+          speedIndicator.innerText = `Total Speed: ${data.total_speed || '0 KB/s'}`;
+          const badge = document.getElementById('engineStatusBadge');
+          if (badge) {
+            badge.innerText = '🟢 Engine Online';
+            badge.style.color = '#a6e3a1';
+            badge.style.background = 'rgba(166, 227, 161, 0.15)';
+          }
+          renderTasks();
+        })
+        .catch(() => {
+          serverTasks = [];
+          const badge = document.getElementById('engineStatusBadge');
+          if (badge) {
+            badge.innerText = '🔴 Engine Offline';
+            badge.style.color = '#f38ba8';
+            badge.style.background = 'rgba(243, 139, 168, 0.15)';
+          }
+          renderTasks();
+        });
+    }
+
+    let autoDownloaded = new Set();
+
+    function renderTasks() {
+      // 1. Render Active Tasks
+      const allActive = [...localActiveTasks, ...serverTasks.filter(t => t.status !== 'Completed')];
+      activeBadge.innerText = allActive.length;
+      drawerActiveCount.innerText = allActive.length;
+
+      if (allActive.length === 0) {
+        activeTasksList.innerHTML = `<div class="empty-state">No downloads active right now.<br>Paste a link above to start!</div>`;
+      } else {
+        activeTasksList.innerHTML = allActive.map(t => `
+          <div class="task-item">
+            <div class="task-top">
+              <div class="task-title">${t.filename}</div>
+              <div class="task-status-tag status-${t.status.split(' ')[0]}">${t.status}</div>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" style="width: ${t.progress || 0}%"></div>
+            </div>
+            <div class="task-details">
+              <span>${t.size || '0 B'} (${(t.progress || 0).toFixed(0)}%)</span>
+              <span>${t.speed || '0 KB/s'} • ${t.eta || '--:--'}</span>
+            </div>
+            <div class="task-controls">
+              ${t.status === 'Downloading' && !t.id.startsWith('task_') ? `<button class="btn-action" onclick="pauseTask('${t.id}')">⏸ Pause</button>` : ''}
+              ${t.status === 'Paused' ? `<button class="btn-action" onclick="resumeTask('${t.id}')">▶ Resume</button>` : ''}
+              <button class="btn-action" onclick="deleteTask('${t.id}')">✖ Cancel</button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Check server completed tasks and push to completed history
+      const serverDone = serverTasks.filter(t => t.status === 'Completed');
+      const serverBase = getServerBase();
+      serverDone.forEach(t => {
+        if (!autoDownloaded.has(t.id)) {
+          autoDownloaded.add(t.id);
+          addFinishedHistory(t.filename, t.size, serverBase + t.download_url, 'video');
+          if (isNative && window.AndroidApp.downloadFile) {
+            window.AndroidApp.downloadFile(serverBase + t.download_url, t.filename);
+          }
+        }
+      });
+
+      // 2. Render Finished Tasks
+      doneBadge.innerText = completedHistory.length;
+      drawerDoneCount.innerText = completedHistory.length;
+
+      if (completedHistory.length === 0) {
+        finishedTasksList.innerHTML = `<div class="empty-state">No downloaded files yet.</div>`;
+      } else {
+        finishedTasksList.innerHTML = completedHistory.map(item => {
+          const icon = item.type === 'music' ? '🎵' : (item.type === 'video' ? '🎥' : '📦');
+          return `
+            <div class="task-item">
+              <div class="task-top">
+                <div class="task-title">${icon} ${item.filename}</div>
+                <div class="task-status-tag status-Completed">Completed</div>
+              </div>
+              <div class="task-details" style="margin-top: 4px;">
+                <span>${(item.size && item.size !== '0 B') ? item.size : 'Saved in Downloads'} • ${item.time || ''}</span>
+                <span>/storage/Download</span>
+              </div>
+              <div class="task-controls">
+                <button class="btn-action btn-open-file" onclick="openFileItem('${item.filename}')">▶ Open / Play</button>
+                <button class="btn-action" onclick="deleteHistoryItem('${item.id}')">🗑️ Remove</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function openFileItem(filename) {
+      if (isNative && window.AndroidApp.openDownloadedFile) {
+        window.AndroidApp.openDownloadedFile(filename);
+      } else {
+        alert('File is saved in your device Downloads folder: ' + filename);
+      }
+    }
+
+    function deleteHistoryItem(id) {
+      completedHistory = completedHistory.filter(i => i.id !== id);
+      try {
+        localStorage.setItem('fs_completed_history', JSON.stringify(completedHistory));
+      } catch (e) {}
+      renderTasks();
+    }
+
+    function pauseTask(id) {
+      const serverBase = getServerBase();
+      if (serverBase) fetch(`${serverBase}/api/tasks/${id}/pause`, { method: 'POST' }).then(() => fetchTasks());
+    }
+    function resumeTask(id) {
+      const serverBase = getServerBase();
+      if (serverBase) fetch(`${serverBase}/api/tasks/${id}/resume`, { method: 'POST' }).then(() => fetchTasks());
+    }
+    function deleteTask(id) {
+      localActiveTasks = localActiveTasks.filter(t => t.id !== id);
+      const serverBase = getServerBase();
+      if (serverBase && !id.startsWith('task_')) {
+        fetch(`${serverBase}/api/tasks/${id}/cancel`, { method: 'POST' }).then(() => fetchTasks());
+      }
+      renderTasks();
+    }
+
+    // Preferences
+    function openSettingsModal() {
+      document.getElementById('serverInput').value = localStorage.getItem('fs_server_url') || 'http://192.168.0.111:5000';
+      document.getElementById('prefQuality').value = localStorage.getItem('fs_pref_quality') || '720p';
+      document.getElementById('prefThreads').value = localStorage.getItem('fs_pref_threads') || '8';
+      document.getElementById('settingsModal').style.display = 'flex';
+    }
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').style.display = 'none';
+    }
+    function savePreferences() {
+      localStorage.setItem('fs_pref_quality', document.getElementById('prefQuality').value);
+      localStorage.setItem('fs_pref_threads', document.getElementById('prefThreads').value);
+      qualitySelect.value = document.getElementById('prefQuality').value;
+    }
+    function loadPreferences() {
+      const q = localStorage.getItem('fs_pref_quality') || '720p';
+      qualitySelect.value = q;
+    }
+    function saveServerLink() {
+      let val = document.getElementById('serverInput').value.trim();
+      if (val && !val.startsWith('http')) val = 'http://' + val;
+      if (val) localStorage.setItem('fs_server_url', val);
+      else localStorage.removeItem('fs_server_url');
+      closeSettingsModal();
+      fetchTasks();
+    }
+    function clearServerLink() {
+      localStorage.removeItem('fs_server_url');
+      document.getElementById('serverInput').value = '';
+      closeSettingsModal();
+      renderTasks();
+    }
+
+    // Polling server every 1.5s
+    setInterval(fetchTasks, 1500);
+    fetchTasks();
+  </script>
+</body>
+</html>
