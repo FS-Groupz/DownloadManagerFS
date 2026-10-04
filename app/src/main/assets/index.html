@@ -870,11 +870,6 @@
     const drawerActiveCount = document.getElementById('drawerActiveCount');
     const drawerDoneCount = document.getElementById('drawerDoneCount');
 
-    // PetsHeaven Ad Elements
-    const petsAdModal = document.getElementById('petsAdModal');
-    const adTimerText = document.getElementById('adTimerText');
-    const adSkipBtn = document.getElementById('adSkipBtn');
-
     let currentMode = 'video'; // 'video' or 'mp3'
     let pendingPayload = null;
     let adInterval = null;
@@ -1058,8 +1053,6 @@
       showFullscreenPetsHeavenAd();
     });
 
-    let adInterval = null;
-
     function showFullscreenPetsHeavenAd() {
       const adModal = document.getElementById('petsFullscreenAd');
       const adCountdownPill = document.getElementById('adCountdownPill');
@@ -1130,8 +1123,11 @@
       // Case A: Connected to PC / Kali Engine
       if (serverBase) {
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 4000);
           const resp = await fetch(serverBase + '/api/download', {
             method: 'POST',
+            signal: controller.signal,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               url: url,
@@ -1140,6 +1136,7 @@
               segments: parseInt(localStorage.getItem('fs_pref_threads') || '8')
             })
           });
+          clearTimeout(timeoutId);
           if (resp.ok) {
             fetchTasks();
             return;
@@ -1171,11 +1168,7 @@
       if (isNative && window.AndroidApp.showToast) {
         window.AndroidApp.showToast('⚠️ Engine not reachable! Check PC server IP');
       }
-      alert('⚠️ Cannot download social video:
-
-The Download Engine at (' + serverBase + ') is offline or unreachable.
-
-Please make sure server.py is running on your PC and your phone is connected to the same Wi-Fi network.');
+      alert('⚠️ Cannot download social video:\n\nThe Download Engine at (' + serverBase + ') is offline or unreachable.\n\nPlease make sure server.py is running on your PC and your phone is connected to the same Wi-Fi network.');
       switchTab('new');
     }
 

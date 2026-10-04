@@ -25,24 +25,24 @@ A modern, high-speed, cross-platform video & audio downloader app for **Android*
 
 ---
 
-## 📦 Downloads & Releases (Latest: v1.2.1)
+## 📦 Downloads & Releases (Latest: v1.2.2)
 
 Pre-built binaries and installation packages are available in the [`releases/`](releases/) folder:
 
 | Platform | Download Link | Type |
 | :--- | :--- | :--- |
-| 📱 **Android** | [DownloadManagerFS-v1.2.1.apk](releases/DownloadManagerFS-v1.2.1.apk) | Signed Release APK (180 KB) |
+| 📱 **Android** | [DownloadManagerFS-v1.2.2.apk](releases/DownloadManagerFS-v1.2.2.apk) | Signed Release APK (180 KB) |
 | 🐧 **Linux** | [DownloadManagerFS-Linux](releases/DownloadManagerFS-Linux) | Standalone Executable (9.9 MB) |
 | 🪟 **Windows** | [DownloadManagerFS-Windows.bat](releases/DownloadManagerFS-Windows.bat) | Batch Launcher / GitHub Release `.exe` |
 
-Direct GitHub Release page: **[GitHub Releases v1.2.1](https://github.com/FS-Groupz/DownloadManagerFS/releases/tag/v1.2.1)**
+Direct GitHub Release page: **[GitHub Releases v1.2.2](https://github.com/FS-Groupz/DownloadManagerFS/releases/tag/v1.2.2)**
 
 ---
 
 ## 🚀 Quick Start Guide
 
 ### 📱 Android
-1. Download [`releases/DownloadManagerFS-v1.2.1.apk`](releases/DownloadManagerFS-v1.2.1.apk).
+1. Download [`releases/DownloadManagerFS-v1.2.2.apk`](releases/DownloadManagerFS-v1.2.2.apk).
 2. Install the APK on your device.
 3. If using in standalone Wi-Fi engine mode, ensure `server.py` is running on your PC or local server.
 
@@ -71,7 +71,7 @@ DownloadManagerFS/
 │   └── release.keystore      # Release signing keystore
 ├── assets/                   # Bundled UI assets for desktop executable
 ├── releases/                 # Packaged Release Binaries
-│   ├── DownloadManagerFS-v1.2.1.apk
+│   ├── DownloadManagerFS-v1.2.2.apk
 │   ├── DownloadManagerFS-Linux
 │   ├── DownloadManagerFS-Windows.bat
 │   ├── DownloadManagerFS-Windows.ps1

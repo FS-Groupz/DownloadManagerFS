@@ -59,6 +59,27 @@ public class MainActivity extends Activity {
         // JavaScript Interface for Native Android Integration
         webView.addJavascriptInterface(new AndroidBridge(this), "AndroidApp");
 
+        webView.setWebChromeClient(new android.webkit.WebChromeClient() {
+            @Override
+            public boolean onConsoleMessage(android.webkit.ConsoleMessage consoleMessage) {
+                android.util.Log.d("DownloadManagerFS-JS", consoleMessage.message() + " -- Line "
+                        + consoleMessage.lineNumber());
+                return true;
+            }
+
+            @Override
+            public boolean onJsAlert(WebView view, String url, String message, android.webkit.JsResult result) {
+                new android.app.AlertDialog.Builder(MainActivity.this)
+                        .setTitle("Download Manager FS")
+                        .setMessage(message)
+                        .setPositiveButton(android.R.string.ok, (dialog, which) -> result.confirm())
+                        .setCancelable(false)
+                        .create()
+                        .show();
+                return true;
+            }
+        });
+
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
