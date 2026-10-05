@@ -757,7 +757,7 @@
       <img src="/icon.png" onerror="this.src='icon.png'" alt="FS Groupz" style="width: 42px; height: 42px; border-radius: 10px;">
       <div>
         <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">Download Manager FS</div>
-        <div style="font-size: 0.72rem; color: var(--primary);">v1.2.0 • FS Groupz</div>
+        <div style="font-size: 0.72rem; color: var(--primary);">v1.2.3 • FS Groupz</div>
       </div>
     </div>
     <ul class="drawer-items">
@@ -843,10 +843,10 @@
       </div>
 
       <details style="margin-top: 14px; font-size: 0.78rem; color: var(--subtext);">
-        <summary style="cursor: pointer; padding: 4px 0; color: var(--primary);">🖥️ Optional: Connect PC/Laptop Turbo Engine</summary>
+        <summary style="cursor: pointer; padding: 4px 0; color: var(--primary);">🌐 24/7 Cloud Engine & Server URL</summary>
         <div style="margin-top: 8px;">
-          <p style="margin-bottom: 6px;">If running Download Manager FS on your PC/Kali on the same Wi-Fi, enter IP to link:</p>
-          <input type="text" id="serverInput" placeholder="http://192.168.1.15:8080" style="margin-bottom: 6px;">
+          <p style="margin-bottom: 6px;">Default 24/7 Engine: https://downloader.fsgroupz.com (or enter your custom server IP/URL):</p>
+          <input type="text" id="serverInput" placeholder="https://downloader.fsgroupz.com" style="margin-bottom: 6px;">
           <div style="display:flex; gap:6px;">
             <button class="btn-action btn-save-phone" onclick="saveServerLink()">Connect PC</button>
             <button class="btn-action" onclick="clearServerLink()">Standalone</button>
@@ -855,7 +855,7 @@
       </details>
 
       <div style="margin-top: 18px; text-align: center; font-size: 0.75rem; color: var(--subtext);">
-        Download Manager FS v1.2.0 • FS Groupz<br>
+        Download Manager FS v1.2.3 • FS Groupz<br>
         Developed by Zeeshan Ahmad
       </div>
     </div>
@@ -869,7 +869,11 @@
       if (window.location.protocol.startsWith('http')) {
         return window.location.origin;
       }
-      return localStorage.getItem('fs_server_url') || 'http://192.168.0.111:5000';
+      const saved = localStorage.getItem('fs_server_url');
+      if (!saved || saved.includes('192.168.0.111')) {
+        return 'https://downloader.fsgroupz.com';
+      }
+      return saved;
     }
 
     // Elements
@@ -1372,7 +1376,7 @@
 
     // Preferences
     function openSettingsModal() {
-      document.getElementById('serverInput').value = localStorage.getItem('fs_server_url') || 'http://192.168.0.111:5000';
+      document.getElementById('serverInput').value = localStorage.getItem('fs_server_url') || 'https://downloader.fsgroupz.com';
       document.getElementById('prefQuality').value = localStorage.getItem('fs_pref_quality') || '720p';
       document.getElementById('prefThreads').value = localStorage.getItem('fs_pref_threads') || '8';
       document.getElementById('settingsModal').style.display = 'flex';
