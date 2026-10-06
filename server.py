@@ -29,6 +29,26 @@ PORT = int(os.environ.get("PORT", 5000))
 DOWNLOAD_DIR = os.path.join(os.path.expanduser("~"), "Downloads", "DownloadManagerFS")
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
+COOKIES_FILE = os.path.join(DOWNLOAD_DIR, "cookies.txt")
+
+def get_active_cookies_file():
+    # 1. Environment variable YOUTUBE_COOKIES (ideal for Render / Docker cloud)
+    if os.environ.get("YOUTUBE_COOKIES"):
+        try:
+            with open(COOKIES_FILE, "w", encoding="utf-8") as f:
+                f.write(os.environ["YOUTUBE_COOKIES"].strip())
+            return COOKIES_FILE
+        except Exception:
+            pass
+    # 2. Local cookies.txt in current directory
+    if os.path.exists("cookies.txt"):
+        return os.path.abspath("cookies.txt")
+    # 3. cookies.txt in DOWNLOAD_DIR
+    if os.path.exists(COOKIES_FILE):
+        return COOKIES_FILE
+    return None
+
+
 # Add deno and node to PATH if available in standard user locations
 deno_in_path = shutil.which("deno")
 deno_user_dir = os.path.expanduser("~/.deno/bin")
@@ -116,7 +136,7 @@ class DownloadTask:
             "error": self.error
         }
 
-def run_download_worker(task):
+def run_download_worker(task, is_retry=False):
     env = os.environ.copy()
     if os.path.exists(deno_user_dir) and deno_user_dir not in env.get("PATH", ""):
         env["PATH"] = deno_user_dir + os.pathsep + env.get("PATH", "")
@@ -125,10 +145,20 @@ def run_download_worker(task):
     extra_args = [
         "--no-check-certificates",
         "--geo-bypass",
-        "--extractor-args", "youtube:player_client=android,ios,web;player_skip=configs",
         "--extractor-args", "youtubetab:skip=authcheck",
         "--compat-options", "no-youtube-unavailable-videos"
     ]
+
+    # Configure resilient player client
+    if is_retry:
+        extra_args.extend(["--extractor-args", "youtube:player_client=tv_embedded,android;player_skip=configs"])
+    else:
+        extra_args.extend(["--extractor-args", "youtube:player_client=android,ios;player_skip=configs"])
+
+    # Attach cookies if available
+    active_cookies = get_active_cookies_file()
+    if active_cookies:
+        extra_args.extend(["--cookies", active_cookies])
 
     if task.audio_only:
         fmt = "bestaudio/best"
@@ -265,12 +295,22 @@ def run_download_worker(task):
             print(f"[{task.id}] SUCCESS: {task.saved_filepath} -> {task.download_url}")
         else:
             if task.status not in ["Paused", "Cancelled"]:
-                task.status = "Error"
                 err_candidates = [l for l in recent_lines if "ERROR:" in l or "Error:" in l]
                 err_msg = err_candidates[-1] if err_candidates else (recent_lines[-1] if recent_lines else f"Exit {proc.returncode}")
                 err_msg = err_msg.replace("ERROR: ", "").strip()
                 task.error = err_msg
                 task.speed = err_msg[:60]
+
+                # Automatic retry with fallback client if YouTube bot check / format issue encountered
+                if not is_retry and ("bot" in err_msg.lower() or "sign in" in err_msg.lower() or "not available" in err_msg.lower()):
+                    print(f"[{task.id}] Bot verification or format block detected. Auto-retrying with tv_embedded client fallback...")
+                    task.status = "Downloading"
+                    task.speed = "Retrying with fallback..."
+                    task.error = ""
+                    run_download_worker(task, is_retry=True)
+                    return
+
+                task.status = "Error"
             print(f"[{task.id}] FAILED (exit {proc.returncode}): {task.error}")
 
     except Exception as e:
@@ -327,6 +367,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 "status": "online",
                 "python": sys.version,
                 "yt_dlp_version": ytdlp_ver,
+                "has_cookies": bool(get_active_cookies_file()),
                 "ffmpeg": shutil.which("ffmpeg"),
                 "node": shutil.which("node"),
                 "deno": shutil.which("deno"),
@@ -505,6 +546,27 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({"status": "ok", "task_id": task_id}).encode("utf-8"))
             return
+
+        if path == "/api/cookies":
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length)
+            try:
+                data = json.loads(body.decode("utf-8"))
+                cookies_content = data.get("cookies", "").strip()
+                if cookies_content:
+                    with open(COOKIES_FILE, "w", encoding="utf-8") as f:
+                        f.write(cookies_content)
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(b'{"status":"ok","message":"Cookies saved successfully"}')
+                    return
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+                return
 
         if path.startswith("/api/tasks/"):
             parts = path.strip("/").split("/")

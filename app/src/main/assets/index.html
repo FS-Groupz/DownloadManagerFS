@@ -855,6 +855,14 @@
             <button class="btn-action btn-save-phone" onclick="saveServerLink()">Save URL</button>
             <button class="btn-action" onclick="clearServerLink()">Auto Cloud</button>
           </div>
+          <details style="margin-top: 10px;">
+            <summary style="cursor: pointer; color: var(--subtext); font-size: 0.76rem;">🍪 YouTube Cookies (Bypass Bot Verification)</summary>
+            <div style="margin-top: 6px;">
+              <p style="font-size: 0.72rem; color: var(--subtext); margin-bottom: 4px;">If YouTube asks to sign in or confirm not a bot, paste exported cookies.txt content below:</p>
+              <textarea id="cookiesInput" rows="3" placeholder="Paste Netscape cookies.txt content here..." style="width:100%; font-size:0.72rem; background:rgba(0,0,0,0.3); color:#fff; border:1px solid var(--border); border-radius:6px; padding:6px; font-family:monospace; box-sizing:border-box;"></textarea>
+              <button class="btn-action" onclick="saveCookiesToServer()" style="margin-top:4px; width:100%; justify-content:center;">Save Cookies to Cloud Engine</button>
+            </div>
+          </details>
         </div>
       </details>
 
@@ -1484,6 +1492,30 @@
       document.getElementById('serverInput').value = activeCloudBase;
       closeSettingsModal();
       checkCloudConnection();
+    }
+
+        async function saveCookiesToServer() {
+      const cookies = document.getElementById('cookiesInput').value.trim();
+      if (!cookies) {
+        alert('Please paste your cookies text first!');
+        return;
+      }
+      const serverBase = getServerBase();
+      try {
+        const res = await fetch(serverBase + '/api/cookies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cookies: cookies })
+        });
+        if (res.ok) {
+          alert('✅ Cookies successfully saved to 24/7 Cloud Engine!');
+          document.getElementById('cookiesInput').value = '';
+        } else {
+          alert('⚠️ Could not save cookies to server.');
+        }
+      } catch (e) {
+        alert('Error connecting to server: ' + e.message);
+      }
     }
 
     // Polling server every 1.5s
