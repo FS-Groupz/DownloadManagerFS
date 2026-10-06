@@ -32,10 +32,10 @@ A modern, high-speed, cross-platform video & audio downloader app for **Android*
 
 | Platform | Direct 1-Tap Download | Fast Raw Mirror |
 | :--- | :--- | :--- |
-| 📱 **Android (v1.2.3 Recommended)** | [📥 **Download APK (v1.2.3)**](https://github.com/FS-Groupz/DownloadManagerFS/releases/download/v1.2.3/DownloadManagerFS-v1.2.3.apk) | [Raw Link](https://github.com/FS-Groupz/DownloadManagerFS/raw/main/releases/DownloadManagerFS-v1.2.3.apk) |
+| 📱 **Android (v1.2.4 Recommended)** | [📥 **Download APK (v1.2.4)**](https://github.com/FS-Groupz/DownloadManagerFS/releases/download/v1.2.4/DownloadManagerFS-v1.2.4.apk) | [Raw Link](https://github.com/FS-Groupz/DownloadManagerFS/raw/main/releases/DownloadManagerFS-v1.2.4.apk) |
 | 📱 **Android (v1.2.1)** | [📥 **Download APK (v1.2.1)**](https://github.com/FS-Groupz/DownloadManagerFS/releases/download/v1.2.1/DownloadManagerFS-v1.2.1.apk) | [Raw Link](https://github.com/FS-Groupz/DownloadManagerFS/raw/main/releases/DownloadManagerFS-v1.2.1.apk) |
-| 🐧 **Linux** | [📥 **Download Linux Binary**](https://github.com/FS-Groupz/DownloadManagerFS/releases/download/v1.2.3/DownloadManagerFS-Linux) | [Raw Link](https://github.com/FS-Groupz/DownloadManagerFS/raw/main/releases/DownloadManagerFS-Linux) |
-| 🪟 **Windows** | [📥 **Download Launcher (.bat)**](https://github.com/FS-Groupz/DownloadManagerFS/releases/download/v1.2.3/DownloadManagerFS-Windows.bat) | [PowerShell Script](https://github.com/FS-Groupz/DownloadManagerFS/releases/download/v1.2.3/DownloadManagerFS-Windows.ps1) |
+| 🐧 **Linux** | [📥 **Download Linux Binary**](https://github.com/FS-Groupz/DownloadManagerFS/releases/download/v1.2.4/DownloadManagerFS-Linux) | [Raw Link](https://github.com/FS-Groupz/DownloadManagerFS/raw/main/releases/DownloadManagerFS-Linux) |
+| 🪟 **Windows** | [📥 **Download Launcher (.bat)**](https://github.com/FS-Groupz/DownloadManagerFS/releases/download/v1.2.4/DownloadManagerFS-Windows.bat) | [PowerShell Script](https://github.com/FS-Groupz/DownloadManagerFS/releases/download/v1.2.4/DownloadManagerFS-Windows.ps1) |
 
 All versions are also published under **[GitHub Releases](https://github.com/FS-Groupz/DownloadManagerFS/releases)**.
 
@@ -44,7 +44,7 @@ All versions are also published under **[GitHub Releases](https://github.com/FS-
 ## 🚀 Quick Start Guide
 
 ### 📱 Android
-1. Download [`releases/DownloadManagerFS-v1.2.3.apk`](releases/DownloadManagerFS-v1.2.3.apk).
+1. Download [`releases/DownloadManagerFS-v1.2.4.apk`](releases/DownloadManagerFS-v1.2.4.apk).
 2. Install the APK on your device.
 3. If using in standalone Wi-Fi engine mode, ensure `server.py` is running on your PC or local server.
 
@@ -73,7 +73,7 @@ DownloadManagerFS/
 │   └── release.keystore      # Release signing keystore
 ├── assets/                   # Bundled UI assets for desktop executable
 ├── releases/                 # Packaged Release Binaries
-│   ├── DownloadManagerFS-v1.2.3.apk
+│   ├── DownloadManagerFS-v1.2.4.apk
 │   ├── DownloadManagerFS-Linux
 │   ├── DownloadManagerFS-Windows.bat
 │   ├── DownloadManagerFS-Windows.ps1

@@ -845,17 +845,21 @@
       <details style="margin-top: 14px; font-size: 0.78rem; color: var(--subtext);">
         <summary style="cursor: pointer; padding: 4px 0; color: var(--primary);">🌐 24/7 Cloud Engine & Server URL</summary>
         <div style="margin-top: 8px;">
-          <p style="margin-bottom: 6px;">Default 24/7 Engine: https://downloader.fsgroupz.com (or enter your custom server IP/URL):</p>
+          <p style="margin-bottom: 6px;">24/7 Cloud Backend (Auto-connects):<br>
+            • https://fsdm.fsgroupz.com<br>
+            • https://downloader.fsgroupz.com<br>
+            • https://downloadmanagerfs.onrender.com
+          </p>
           <input type="text" id="serverInput" placeholder="https://downloader.fsgroupz.com" style="margin-bottom: 6px;">
           <div style="display:flex; gap:6px;">
-            <button class="btn-action btn-save-phone" onclick="saveServerLink()">Connect PC</button>
-            <button class="btn-action" onclick="clearServerLink()">Standalone</button>
+            <button class="btn-action btn-save-phone" onclick="saveServerLink()">Save URL</button>
+            <button class="btn-action" onclick="clearServerLink()">Auto Cloud</button>
           </div>
         </div>
       </details>
 
       <div style="margin-top: 18px; text-align: center; font-size: 0.75rem; color: var(--subtext);">
-        Download Manager FS v1.2.3 • FS Groupz<br>
+        Download Manager FS v1.2.4 • FS Groupz<br>
         Developed by Zeeshan Ahmad
       </div>
     </div>
@@ -865,15 +869,53 @@
     // Environment Detection
     const isNative = (typeof window.AndroidApp !== 'undefined') && (typeof window.AndroidApp.isNativeApp === 'function' && window.AndroidApp.isNativeApp());
 
+    // 24/7 Cloud Engine Endpoints (Primary & Resilient Fallbacks)
+    const CLOUD_ENDPOINTS = [
+      'https://fsdm.fsgroupz.com',
+      'https://downloader.fsgroupz.com',
+      'https://downloadmanagerfs.onrender.com'
+    ];
+    let activeCloudBase = 'https://downloader.fsgroupz.com';
+
+    function isLocalAddress(url) {
+      if (!url) return false;
+      return url.includes('127.0.0.1') || url.includes('localhost') || 
+             url.includes('192.168.') || url.includes('172.20.') || url.includes('10.0.');
+    }
+
     function getServerBase() {
-      if (window.location.protocol.startsWith('http')) {
+      if (window.location.protocol.startsWith('http') && !isLocalAddress(window.location.origin)) {
         return window.location.origin;
       }
       const saved = localStorage.getItem('fs_server_url');
-      if (!saved || saved.includes('192.168.0.111')) {
-        return 'https://downloader.fsgroupz.com';
+      if (!saved || isLocalAddress(saved)) {
+        return activeCloudBase;
       }
       return saved;
+    }
+
+    async function checkCloudConnection() {
+      const saved = localStorage.getItem('fs_server_url');
+      if (saved && !isLocalAddress(saved)) {
+        activeCloudBase = saved;
+        fetchTasks();
+        return;
+      }
+
+      for (const endpoint of CLOUD_ENDPOINTS) {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 2500);
+          const r = await fetch(endpoint + '/api/diag', { signal: controller.signal });
+          clearTimeout(timer);
+          if (r.ok) {
+            activeCloudBase = endpoint;
+            console.log('Connected to cloud engine:', endpoint);
+            break;
+          }
+        } catch (e) {}
+      }
+      fetchTasks();
     }
 
     // Elements
@@ -1033,12 +1075,19 @@
     };
 
     window.addEventListener('DOMContentLoaded', () => {
+      // Discard legacy local IP from localStorage if present
+      const saved = localStorage.getItem('fs_server_url');
+      if (saved && isLocalAddress(saved)) {
+        localStorage.removeItem('fs_server_url');
+      }
+
       if (isNative && window.AndroidApp.getPendingSharedUrl) {
         const pending = window.AndroidApp.getPendingSharedUrl();
         if (pending) window.onSharedUrlReceived(pending);
       }
       loadPreferences();
       renderTasks();
+      checkCloudConnection();
     });
 
     function isSocialMedia(url) {
@@ -1140,15 +1189,16 @@
       pasteClearBtn.innerText = '📋';
       switchTab('active');
       if (isNative && window.AndroidApp.showToast) {
-        window.AndroidApp.showToast('📥 Download started in background!');
+        window.AndroidApp.showToast('📥 Starting cloud download...');
       }
 
-      // Case A: Connected to PC / Kali Engine
-      if (serverBase) {
+      // Case A: 24/7 Cloud Engine Download
+      const endpointsToTry = [serverBase, ...CLOUD_ENDPOINTS.filter(e => e !== serverBase)];
+      for (const endpoint of endpointsToTry) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 4000);
-          const resp = await fetch(serverBase + '/api/download', {
+          const timeoutId = setTimeout(() => controller.abort(), 12000);
+          const resp = await fetch(endpoint + '/api/download', {
             method: 'POST',
             signal: controller.signal,
             headers: { 'Content-Type': 'application/json' },
@@ -1161,11 +1211,12 @@
           });
           clearTimeout(timeoutId);
           if (resp.ok) {
+            activeCloudBase = endpoint;
             fetchTasks();
             return;
           }
         } catch (e) {
-          console.warn('Server fetch note, continuing in standalone mode:', e);
+          console.warn('Endpoint note (' + endpoint + '):', e);
         }
       }
 
@@ -1187,11 +1238,10 @@
     }
 
     async function handleSocialMediaDownload(url, quality, isAudio) {
-      const serverBase = getServerBase();
       if (isNative && window.AndroidApp.showToast) {
-        window.AndroidApp.showToast('⚠️ Engine not reachable! Check PC server IP');
+        window.AndroidApp.showToast('⚠️ Cloud engine waking up, please retry!');
       }
-      alert('⚠️ Cannot download social video:\n\nThe Download Engine at (' + serverBase + ') is offline or unreachable.\n\nPlease make sure server.py is running on your PC and your phone is connected to the same Wi-Fi network.');
+      alert('⚠️ Cloud Engine Notice:\n\nThe 24/7 Cloud Engine is currently waking up or connecting. Please wait 10 seconds and tap Download again.');
       switchTab('new');
     }
 
@@ -1231,8 +1281,29 @@
       return 'download_' + Date.now();
     }
 
-    // Polling Server Tasks (if connected to PC)
+    // Polling Server Tasks (Connected to 24/7 Cloud)
     let serverTasks = [];
+    let isProbing = false;
+
+    async function probeFallbackCloud() {
+      if (isProbing) return;
+      isProbing = true;
+      for (const endpoint of CLOUD_ENDPOINTS) {
+        if (endpoint === activeCloudBase) continue;
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 2500);
+          const r = await fetch(endpoint + '/api/diag', { signal: controller.signal });
+          clearTimeout(timer);
+          if (r.ok) {
+            activeCloudBase = endpoint;
+            console.log('Switched to fallback cloud:', endpoint);
+            break;
+          }
+        } catch (e) {}
+      }
+      isProbing = false;
+    }
 
     function fetchTasks() {
       const serverBase = getServerBase();
@@ -1241,26 +1312,33 @@
         return;
       }
 
-      fetch(serverBase + '/api/tasks')
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+
+      fetch(serverBase + '/api/tasks', { signal: controller.signal })
         .then(r => r.json())
         .then(data => {
+          clearTimeout(timer);
           serverTasks = data.tasks || [];
           speedIndicator.innerText = `Total Speed: ${data.total_speed || '0 KB/s'}`;
           const badge = document.getElementById('engineStatusBadge');
           if (badge) {
-            badge.innerText = '🟢 Engine Online';
+            const hostDisplay = serverBase.replace(/^https?:\/\//, '');
+            badge.innerText = `🟢 Cloud Online (${hostDisplay})`;
             badge.style.color = '#a6e3a1';
             badge.style.background = 'rgba(166, 227, 161, 0.15)';
           }
           renderTasks();
         })
         .catch(() => {
+          clearTimeout(timer);
+          probeFallbackCloud();
           serverTasks = [];
           const badge = document.getElementById('engineStatusBadge');
           if (badge) {
-            badge.innerText = '🔴 Engine Offline';
-            badge.style.color = '#f38ba8';
-            badge.style.background = 'rgba(243, 139, 168, 0.15)';
+            badge.innerText = '🔴 Cloud Connecting...';
+            badge.style.color = '#f9e2af';
+            badge.style.background = 'rgba(249, 226, 175, 0.15)';
           }
           renderTasks();
         });
@@ -1376,7 +1454,7 @@
 
     // Preferences
     function openSettingsModal() {
-      document.getElementById('serverInput').value = localStorage.getItem('fs_server_url') || 'https://downloader.fsgroupz.com';
+      document.getElementById('serverInput').value = localStorage.getItem('fs_server_url') || activeCloudBase;
       document.getElementById('prefQuality').value = localStorage.getItem('fs_pref_quality') || '720p';
       document.getElementById('prefThreads').value = localStorage.getItem('fs_pref_threads') || '8';
       document.getElementById('settingsModal').style.display = 'flex';
@@ -1395,17 +1473,17 @@
     }
     function saveServerLink() {
       let val = document.getElementById('serverInput').value.trim();
-      if (val && !val.startsWith('http')) val = 'http://' + val;
+      if (val && !val.startsWith('http')) val = 'https://' + val;
       if (val) localStorage.setItem('fs_server_url', val);
       else localStorage.removeItem('fs_server_url');
       closeSettingsModal();
-      fetchTasks();
+      checkCloudConnection();
     }
     function clearServerLink() {
       localStorage.removeItem('fs_server_url');
-      document.getElementById('serverInput').value = '';
+      document.getElementById('serverInput').value = activeCloudBase;
       closeSettingsModal();
-      renderTasks();
+      checkCloudConnection();
     }
 
     // Polling server every 1.5s
