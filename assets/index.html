@@ -757,7 +757,7 @@
       <img src="/icon.png" onerror="this.src='icon.png'" alt="FS Groupz" style="width: 42px; height: 42px; border-radius: 10px;">
       <div>
         <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">Download Manager FS</div>
-        <div style="font-size: 0.72rem; color: var(--primary);">v1.2.3 • FS Groupz</div>
+        <div style="font-size: 0.72rem; color: var(--primary);">v1.2.5 • FS Groupz</div>
       </div>
     </div>
     <ul class="drawer-items">
@@ -770,7 +770,10 @@
       <li class="drawer-item" onclick="navigateFromDrawer('done')">
         <span>📁</span> Downloaded Files (<span id="drawerDoneCount">0</span>)
       </li>
-      <li class="drawer-item" onclick="navigateFromDrawer('settings')">
+            <li class="drawer-item" onclick="closeDrawer(); triggerBotVerification('https://m.youtube.com');">
+        <span>🤖</span> YouTube Bot Verification
+      </li>
+<li class="drawer-item" onclick="navigateFromDrawer('settings')">
         <span>⚙️</span> Settings & Preferences
       </li>
       <li class="drawer-item sponsor-item" onclick="openPetsHeaven()">
@@ -867,7 +870,7 @@
       </details>
 
       <div style="margin-top: 18px; text-align: center; font-size: 0.75rem; color: var(--subtext);">
-        Download Manager FS v1.2.4 • FS Groupz<br>
+        Download Manager FS v1.2.5 • FS Groupz<br>
         Developed by Zeeshan Ahmad
       </div>
     </div>
@@ -1388,6 +1391,9 @@
         } else if (lowerUrl.includes("instagram.com")) {
           if (window.AndroidApp.showToast) window.AndroidApp.showToast("⚡ Resolving Instagram reel directly...");
           directMedia = await resolveInstagramDirect(url);
+        } else if (lowerUrl.includes("youtube.com") || lowerUrl.includes("youtu.be")) {
+          if (window.AndroidApp.showToast) window.AndroidApp.showToast("⚡ Resolving YouTube video directly...");
+          directMedia = await resolveYouTubeDirect(url, isAudio);
         }
 
         if (directMedia && directMedia.directUrl) {
@@ -1419,6 +1425,7 @@
               url: url,
               quality: quality,
               audio_only: isAudio,
+              cookies: localStorage.getItem("dmfs_yt_cookies") || (window.AndroidApp && window.AndroidApp.getSavedCookies ? window.AndroidApp.getSavedCookies("youtube_cookies") : ""),
               segments: parseInt(localStorage.getItem("fs_pref_threads") || "8")
             })
           });
@@ -1580,6 +1587,16 @@
               <span>${t.size || '0 B'} (${(t.progress || 0).toFixed(0)}%)</span>
               <span style="${t.status === 'Error' ? 'color:#f38ba8; font-weight:600;' : ''}">${t.error || t.speed || '0 KB/s'} • ${t.eta || '--:--'}</span>
             </div>
+            ${t.error && (t.error.toLowerCase().includes('bot') || t.error.toLowerCase().includes('sign in')) ? `
+              <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 10px; margin-top: 8px; text-align: center;">
+                <div style="color: #fca5a5; font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+                  ⚠️ YouTube Human Verification Required
+                </div>
+                <button class="btn btn-primary" style="background: #2563eb; color: #fff; width: 100%; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 700; cursor: pointer;" onclick="triggerBotVerification('${t.url || 'https://m.youtube.com'}')">
+                  🤖 Solve Bot Check / Sign In on Device
+                </button>
+              </div>
+            ` : ''}
             <div class="task-controls">
               ${t.status === 'Downloading' && !t.id.startsWith('task_') ? `<button class="btn-action" onclick="pauseTask('${t.id}')">⏸ Pause</button>` : ''}
               ${t.status === 'Paused' ? `<button class="btn-action" onclick="resumeTask('${t.id}')">▶ Resume</button>` : ''}
@@ -1646,6 +1663,43 @@
       } catch (e) {}
       renderTasks();
     }
+
+
+    function triggerBotVerification(targetUrl) {
+      if (window.AndroidApp && window.AndroidApp.openBotVerification) {
+        window.AndroidApp.openBotVerification(targetUrl || "https://m.youtube.com");
+      } else {
+        alert("Bot verification runs natively inside the Download Manager FS Android app.");
+      }
+    }
+
+    window.onBotVerificationSuccess = async function(cookies) {
+      if (cookies) {
+        localStorage.setItem("dmfs_yt_cookies", cookies);
+        const serverBase = getServerBase();
+        if (serverBase) {
+          try {
+            await fetch(serverBase + "/api/cookies", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ cookies: cookies })
+            });
+          } catch (e) {
+            console.warn("Failed to update cookies on server:", e);
+          }
+        }
+        if (window.AndroidApp && window.AndroidApp.showToast) {
+          window.AndroidApp.showToast("✓ Bot verification saved! Resuming downloads...");
+        }
+        // Retry any blocked task
+        serverTasks.forEach(t => {
+          if (t.error && (t.error.toLowerCase().includes('bot') || t.error.toLowerCase().includes('sign in'))) {
+            deleteTask(t.id);
+            executeDownload(t.url, t.audio_only ? 'audio' : 'video');
+          }
+        });
+      }
+    };
 
     function pauseTask(id) {
       const serverBase = getServerBase();

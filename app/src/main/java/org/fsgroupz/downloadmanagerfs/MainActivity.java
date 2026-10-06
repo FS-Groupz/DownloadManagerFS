@@ -20,6 +20,17 @@ import android.widget.Toast;
 import android.content.ContentUris;
 import android.database.Cursor;
 import android.provider.MediaStore;
+import android.app.Dialog;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Button;
+import android.view.ViewGroup;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.view.Gravity;
+import android.content.SharedPreferences;
+import org.json.JSONObject;
+
 
 public class MainActivity extends Activity {
 
@@ -356,6 +367,24 @@ public class MainActivity extends Activity {
             });
         }
 
+
+        @JavascriptInterface
+        public void openBotVerification(String targetUrl) {
+            runOnUiThread(() -> showVerificationDialog(targetUrl));
+        }
+
+        @JavascriptInterface
+        public String getSavedCookies(String domain) {
+            SharedPreferences sp = getSharedPreferences("dmfs_cookies", MODE_PRIVATE);
+            return sp.getString(domain, "");
+        }
+
+        @JavascriptInterface
+        public void saveCookies(String domain, String cookies) {
+            SharedPreferences sp = getSharedPreferences("dmfs_cookies", MODE_PRIVATE);
+            sp.edit().putString(domain, cookies).apply();
+        }
+
         @JavascriptInterface
         public void openDownloadedFile(String filename) {
             runOnUiThread(() -> {
@@ -396,6 +425,114 @@ public class MainActivity extends Activity {
                 }
             });
         }
+    }
+
+
+    public void showVerificationDialog(String targetUrl) {
+        if (isFinishing() || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && isDestroyed())) return;
+        Dialog dialog = new Dialog(MainActivity.this, android.R.style.Theme_DeviceDefault_NoActionBar_Fullscreen);
+
+        LinearLayout root = new LinearLayout(MainActivity.this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(Color.parseColor("#0f172a"));
+
+        // Top bar
+        LinearLayout topBar = new LinearLayout(MainActivity.this);
+        topBar.setOrientation(LinearLayout.HORIZONTAL);
+        topBar.setPadding(32, 32, 32, 32);
+        topBar.setBackgroundColor(Color.parseColor("#1e293b"));
+        topBar.setGravity(Gravity.CENTER_VERTICAL);
+
+        TextView title = new TextView(MainActivity.this);
+        title.setText("🛡️ YouTube Human Verification");
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(16);
+        title.setTypeface(null, Typeface.BOLD);
+        LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f);
+        title.setLayoutParams(titleLp);
+        topBar.addView(title);
+
+        Button btnDone = new Button(MainActivity.this);
+        btnDone.setText("✓ Done / Verified");
+        btnDone.setTextColor(Color.WHITE);
+        btnDone.setBackgroundColor(Color.parseColor("#10b981"));
+        btnDone.setPadding(30, 10, 30, 10);
+        topBar.addView(btnDone);
+
+        Button btnClose = new Button(MainActivity.this);
+        btnClose.setText("✕");
+        btnClose.setTextColor(Color.parseColor("#94a3b8"));
+        btnClose.setBackgroundColor(Color.TRANSPARENT);
+        btnClose.setPadding(20, 10, 20, 10);
+        topBar.addView(btnClose);
+
+        root.addView(topBar);
+
+        // Subtitle Tip
+        TextView tip = new TextView(MainActivity.this);
+        tip.setText("Sign in to your Google account or solve CAPTCHA below to confirm you are not a bot. Then tap '✓ Done'.");
+        tip.setTextColor(Color.parseColor("#94a3b8"));
+        tip.setTextSize(12);
+        tip.setPadding(32, 16, 32, 16);
+        tip.setBackgroundColor(Color.parseColor("#1e293b"));
+        root.addView(tip);
+
+        // Verification WebView
+        WebView authWebView = new WebView(MainActivity.this);
+        LinearLayout.LayoutParams wvLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1.0f);
+        authWebView.setLayoutParams(wvLp);
+
+        WebSettings ws = authWebView.getSettings();
+        ws.setJavaScriptEnabled(true);
+        ws.setDomStorageEnabled(true);
+        ws.setDatabaseEnabled(true);
+        ws.setUserAgentString("Mozilla/5.0 (Linux; Android 11; RMX2001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
+
+        CookieManager.getInstance().setAcceptCookie(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            CookieManager.getInstance().setAcceptThirdPartyCookies(authWebView, true);
+        }
+
+        authWebView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                CookieManager.getInstance().flush();
+            }
+        });
+
+        String urlToLoad = (targetUrl != null && !targetUrl.trim().isEmpty()) ? targetUrl : "https://accounts.google.com/ServiceLogin?service=youtube";
+        authWebView.loadUrl(urlToLoad);
+        root.addView(authWebView);
+
+        dialog.setContentView(root);
+        dialog.show();
+
+        btnDone.setOnClickListener(v -> {
+            CookieManager.getInstance().flush();
+            String cookies = CookieManager.getInstance().getCookie("https://www.youtube.com");
+            if (cookies == null || cookies.isEmpty()) {
+                cookies = CookieManager.getInstance().getCookie("https://youtube.com");
+            }
+            if (cookies == null || cookies.isEmpty()) {
+                cookies = CookieManager.getInstance().getCookie("https://google.com");
+            }
+            if (cookies != null && !cookies.isEmpty()) {
+                SharedPreferences sp = getSharedPreferences("dmfs_cookies", MODE_PRIVATE);
+                sp.edit().putString("youtube_cookies", cookies).apply();
+                final String finalCookies = cookies;
+                webView.post(() -> {
+                    String js = "if(window.onBotVerificationSuccess){ window.onBotVerificationSuccess(" + JSONObject.quote(finalCookies) + "); }";
+                    webView.evaluateJavascript(js, null);
+                });
+                Toast.makeText(MainActivity.this, "✓ Verification saved! Resuming downloads...", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(MainActivity.this, "Cookies not detected yet. Please sign in first.", Toast.LENGTH_SHORT).show();
+            }
+            dialog.dismiss();
+        });
+
+        btnClose.setOnClickListener(v -> dialog.dismiss());
     }
 
     @Override

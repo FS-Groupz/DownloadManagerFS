@@ -29,6 +29,23 @@ PORT = int(os.environ.get("PORT", 5000))
 DOWNLOAD_DIR = os.path.join(os.path.expanduser("~"), "Downloads", "DownloadManagerFS")
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
+def format_to_netscape_cookies(raw_cookies):
+    if not raw_cookies or not isinstance(raw_cookies, str):
+        return ""
+    if "# Netscape" in raw_cookies or "\t" in raw_cookies:
+        return raw_cookies
+    lines = ["# Netscape HTTP Cookie File\n", "# Converted by DownloadManagerFS\n"]
+    for part in raw_cookies.split(";"):
+        part = part.strip()
+        if "=" in part:
+            name, val = part.split("=", 1)
+            name = name.strip()
+            val = val.strip()
+            if name:
+                lines.append(f".youtube.com\tTRUE\t/\tTRUE\t2147483647\t{name}\t{val}\n")
+                lines.append(f".google.com\tTRUE\t/\tTRUE\t2147483647\t{name}\t{val}\n")
+    return "".join(lines)
+
 COOKIES_FILE = os.path.join(DOWNLOAD_DIR, "cookies.txt")
 
 def get_active_cookies_file():
@@ -153,7 +170,7 @@ def run_download_worker(task, is_retry=False):
     if is_retry:
         extra_args.extend(["--extractor-args", "youtube:player_client=tv_embedded,android"])
     else:
-        extra_args.extend(["--extractor-args", "youtube:player_client=android,ios"])
+        extra_args.extend(["--extractor-args", "youtube:player_client=visionos,android_vr,android"])
 
     # Attach cookies if available
     active_cookies = get_active_cookies_file()
@@ -527,6 +544,18 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(b"Missing url")
                 return
 
+            cookies_str = data.get("cookies", "").strip()
+            if cookies_str:
+                netscape = format_to_netscape_cookies(cookies_str)
+                if netscape:
+                    try:
+                        with open(COOKIES_FILE, "w", encoding="utf-8") as cf:
+                            cf.write(netscape)
+                        with open("cookies.txt", "w", encoding="utf-8") as cf:
+                            cf.write(netscape)
+                    except Exception:
+                        pass
+
             task_id = "task_" + str(int(time.time() * 1000))
             task = DownloadTask(
                 task_id=task_id,
@@ -554,8 +583,14 @@ class RequestHandler(BaseHTTPRequestHandler):
                 data = json.loads(body.decode("utf-8"))
                 cookies_content = data.get("cookies", "").strip()
                 if cookies_content:
-                    with open(COOKIES_FILE, "w", encoding="utf-8") as f:
-                        f.write(cookies_content)
+                    netscape = format_to_netscape_cookies(cookies_content)
+                    with open(COOKIES_FILE, "w", encoding="utf-8") as cf:
+                        cf.write(netscape)
+                    try:
+                        with open("cookies.txt", "w", encoding="utf-8") as cf:
+                            cf.write(netscape)
+                    except Exception:
+                        pass
                     self.send_response(200)
                     self.send_header("Content-Type", "application/json")
                     self.end_headers()
