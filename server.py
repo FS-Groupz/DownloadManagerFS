@@ -151,9 +151,9 @@ def run_download_worker(task, is_retry=False):
 
     # Configure resilient player client
     if is_retry:
-        extra_args.extend(["--extractor-args", "youtube:player_client=tv_embedded,android;player_skip=configs"])
+        extra_args.extend(["--extractor-args", "youtube:player_client=tv_embedded,android"])
     else:
-        extra_args.extend(["--extractor-args", "youtube:player_client=android,ios;player_skip=configs"])
+        extra_args.extend(["--extractor-args", "youtube:player_client=android,ios"])
 
     # Attach cookies if available
     active_cookies = get_active_cookies_file()

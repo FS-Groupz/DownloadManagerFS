@@ -1188,33 +1188,238 @@
       }
     }
 
+    // === Tier 1: InSaver-Grade On-Device Fast Resolvers ===
+    // Native HTTP request through AndroidBridge or browser fetch with no CORS limitation
+    async function requestHttp(url, method = "GET", headers = {}, body = "") {
+      if (window.AndroidApp && window.AndroidApp.nativeFetch) {
+        try {
+          const resStr = window.AndroidApp.nativeFetch(url, method, JSON.stringify(headers), body || "");
+          const parsed = JSON.parse(resStr);
+          return { ok: parsed.statusCode >= 200 && parsed.statusCode < 400, status: parsed.statusCode, body: parsed.body || "" };
+        } catch (e) {
+          console.warn("nativeFetch error:", e);
+        }
+      }
+      try {
+        const opts = { method, headers: { ...headers } };
+        if (method === "POST" && body) opts.body = body;
+        const res = await fetch(url, opts);
+        const text = await res.text();
+        return { ok: res.ok, status: res.status, body: text };
+      } catch (e) {
+        console.warn("fetch error:", e);
+        return { ok: false, status: 0, body: "" };
+      }
+    }
+
+    // 1. TikTok Fast Resolver (tikwm.com & ssstik.io)
+    async function resolveTikTokDirect(url) {
+      try {
+        const apiUrl = "https://tikwm.com/api/?url=" + encodeURIComponent(url);
+        const res = await requestHttp(apiUrl, "GET", {
+          "Accept": "application/json, text/plain, */*",
+          "User-Agent": "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36"
+        });
+        if (res.ok && res.body) {
+          const json = JSON.parse(res.body);
+          if (json && json.code === 0 && json.data) {
+            const d = json.data;
+            const videoUrl = d.hdplay || d.play;
+            if (videoUrl) {
+              const cleanTitle = (d.title || ("tiktok_" + (d.id || Date.now()))).slice(0, 70).replace(/[^a-zA-Z0-9_\- ]/g, "_");
+              return {
+                title: cleanTitle + ".mp4",
+                directUrl: videoUrl,
+                platform: "TikTok"
+              };
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("TikTok resolution note:", e);
+      }
+      return null;
+    }
+
+    // 2. Facebook Fast Resolver (savef.app)
+    async function resolveFacebookDirect(url) {
+      try {
+        const homeRes = await requestHttp("https://savef.app/en", "GET", {
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        });
+        if (homeRes.body) {
+          const expM = homeRes.body.match(/k_exp\s*=\s*["'](\d+?)["']/);
+          const tokenM = homeRes.body.match(/k_token\s*=\s*["'](\w+?)["']/);
+          if (expM && tokenM) {
+            const bodyParams = new URLSearchParams({
+              p: "home",
+              k_exp: expM[1],
+              k_token: tokenM[1],
+              q: url,
+              lang: "en",
+              web: "savef.app",
+              v: "v2",
+              w: ""
+            });
+            const searchRes = await requestHttp("https://savef.app/api/ajaxSearch", "POST", {
+              "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+              "X-Requested-With": "XMLHttpRequest",
+              "Origin": "https://savef.app",
+              "Referer": "https://savef.app/en",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+            }, bodyParams.toString());
+            if (searchRes.ok && searchRes.body) {
+              const json = JSON.parse(searchRes.body);
+              if (json.status === "ok" && json.data) {
+                const hdM = json.data.match(/href="([^"]+)"[^>]*>.*?HD/i) ||
+                            json.data.match(/href="([^"]+)"[^>]*title="Download Video"/i) ||
+                            json.data.match(/href="([^"]+dl\.snapcdn\.app[^"]+)"/i);
+                const anyM = json.data.match(/href="([^"]+dl\.snapcdn\.app[^"]+)"/i) ||
+                             json.data.match(/href="(https:\/\/[^"]+\.mp4[^"]*)"/i);
+                const finalUrl = (hdM && hdM[1]) || (anyM && anyM[1]);
+                if (finalUrl) {
+                  return {
+                    title: "facebook_" + Date.now() + ".mp4",
+                    directUrl: finalUrl.replace(/&amp;/g, "&"),
+                    platform: "Facebook"
+                  };
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Facebook resolution note:", e);
+      }
+      return null;
+    }
+
+    // 3. Twitter / X Fast Resolver (fxtwitter)
+    async function resolveTwitterDirect(url) {
+      try {
+        const statusM = url.match(/status(?:es)?\/(\d+)/i);
+        if (statusM) {
+          const tweetId = statusM[1];
+          const apiUrl = "https://api.fxtwitter.com/i/status/" + tweetId;
+          const res = await requestHttp(apiUrl, "GET", {
+            "Accept": "application/json",
+            "User-Agent": "Mozilla/5.0"
+          });
+          if (res.ok && res.body) {
+            const json = JSON.parse(res.body);
+            if (json && json.code === 200 && json.tweet) {
+              const tweet = json.tweet;
+              const media = tweet.media;
+              if (media && media.videos && media.videos.length > 0) {
+                const v = media.videos[0];
+                const cleanTitle = (tweet.text || ("x_video_" + tweetId)).slice(0, 60).replace(/[^a-zA-Z0-9_\- ]/g, "_");
+                return {
+                  title: cleanTitle + ".mp4",
+                  directUrl: v.url,
+                  platform: "Twitter"
+                };
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Twitter resolution note:", e);
+      }
+      return null;
+    }
+
+    // 4. Instagram On-Device Fast Resolver (Embed & Caption Parsing)
+    async function resolveInstagramDirect(url) {
+      try {
+        const codeM = url.match(/(?:reel|p|tv)\/([a-zA-Z0-9_\-]+)/i);
+        if (codeM) {
+          const shortcode = codeM[1];
+          const embedUrl = "https://www.instagram.com/reel/" + shortcode + "/embed/captioned/";
+          const embedRes = await requestHttp(embedUrl, "GET", {
+            "User-Agent": "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+          });
+          if (embedRes.ok && embedRes.body) {
+            const vMatch = embedRes.body.match(/"video_url":"([^"]+)"/);
+            if (vMatch && vMatch[1]) {
+              const rawUrl = vMatch[1].replace(/\\u0026/g, "&").replace(/\\\//g, "/").replace(/\\/g, "");
+              return {
+                title: "instagram_reel_" + shortcode + ".mp4",
+                directUrl: rawUrl,
+                platform: "Instagram"
+              };
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Instagram resolution note:", e);
+      }
+      return null;
+    }
+
     // Execute Download (In background immediately)
     async function executeDownload(url, quality, isAudio) {
       const serverBase = getServerBase();
 
       // Clear input and switch to active queue right away
-      urlInput.value = '';
-      pasteClearBtn.innerText = '📋';
-      switchTab('active');
-      if (isNative && window.AndroidApp.showToast) {
-        window.AndroidApp.showToast('📥 Starting cloud download...');
+      urlInput.value = "";
+      pasteClearBtn.innerText = "📋";
+      switchTab("active");
+
+      const isSocial = isSocialMedia(url);
+
+      // --- Tier 1: InSaver-Grade On-Device Fast Resolution ---
+      // For TikTok, Facebook, Twitter, Instagram: resolve directly on the client phone
+      // The user's device IP does NOT get blocked by anti-bot checks!
+      if (isSocial && isNative) {
+        let directMedia = null;
+        const lowerUrl = url.toLowerCase();
+
+        if (lowerUrl.includes("tiktok.com")) {
+          if (window.AndroidApp.showToast) window.AndroidApp.showToast("⚡ Resolving TikTok video directly...");
+          directMedia = await resolveTikTokDirect(url);
+        } else if (lowerUrl.includes("facebook.com") || lowerUrl.includes("fb.watch")) {
+          if (window.AndroidApp.showToast) window.AndroidApp.showToast("⚡ Resolving Facebook video directly...");
+          directMedia = await resolveFacebookDirect(url);
+        } else if (lowerUrl.includes("twitter.com") || lowerUrl.includes("x.com")) {
+          if (window.AndroidApp.showToast) window.AndroidApp.showToast("⚡ Resolving X/Twitter video directly...");
+          directMedia = await resolveTwitterDirect(url);
+        } else if (lowerUrl.includes("instagram.com")) {
+          if (window.AndroidApp.showToast) window.AndroidApp.showToast("⚡ Resolving Instagram reel directly...");
+          directMedia = await resolveInstagramDirect(url);
+        }
+
+        if (directMedia && directMedia.directUrl) {
+          const filename = directMedia.title || ("video_" + Date.now() + ".mp4");
+          if (window.AndroidApp.downloadFile) {
+            window.AndroidApp.downloadFile(directMedia.directUrl, filename);
+          }
+          addFinishedHistory(filename, "Saved to Downloads", directMedia.directUrl, isAudio ? "music" : "file");
+          switchTab("done");
+          return;
+        }
       }
 
-      // Case A: 24/7 Cloud Engine Download
+      // --- Tier 2: 24/7 Cloud Engine (YouTube + Cloud Fallback) ---
+      if (isNative && window.AndroidApp.showToast) {
+        window.AndroidApp.showToast("📥 Connecting to Cloud Engine...");
+      }
+
       const endpointsToTry = [serverBase, ...CLOUD_ENDPOINTS.filter(e => e !== serverBase)];
       for (const endpoint of endpointsToTry) {
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 12000);
-          const resp = await fetch(endpoint + '/api/download', {
-            method: 'POST',
+          const resp = await fetch(endpoint + "/api/download", {
+            method: "POST",
             signal: controller.signal,
-            headers: { 'Content-Type': 'application/json' },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               url: url,
               quality: quality,
               audio_only: isAudio,
-              segments: parseInt(localStorage.getItem('fs_pref_threads') || '8')
+              segments: parseInt(localStorage.getItem("fs_pref_threads") || "8")
             })
           });
           clearTimeout(timeoutId);
@@ -1224,24 +1429,23 @@
             return;
           }
         } catch (e) {
-          console.warn('Endpoint note (' + endpoint + '):', e);
+          console.warn("Endpoint note (" + endpoint + "):", e);
         }
       }
 
       // Case B: Standalone Direct File
-      const isSocial = isSocialMedia(url);
       if (!isSocial) {
         const filename = guessFilename(url);
-        const mime = isAudio ? 'audio/mpeg' : (filename.endsWith('.mp4') ? 'video/mp4' : '');
+        const mime = isAudio ? "audio/mpeg" : (filename.endsWith(".mp4") ? "video/mp4" : "");
         if (isNative && window.AndroidApp.downloadFileWithMime) {
           window.AndroidApp.downloadFileWithMime(url, filename, mime);
         }
-        addFinishedHistory(filename, 'Saved to Downloads', url, isAudio ? 'music' : 'file');
-        switchTab('done');
+        addFinishedHistory(filename, "Saved to Downloads", url, isAudio ? "music" : "file");
+        switchTab("done");
         return;
       }
 
-      // Case C: YouTube / Social Media in Mobile App
+      // Case C: Mobile Notice if offline
       handleSocialMediaDownload(url, quality, isAudio);
     }
 

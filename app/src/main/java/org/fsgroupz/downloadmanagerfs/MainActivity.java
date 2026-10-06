@@ -257,6 +257,56 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public String nativeFetch(String urlStr, String method, String headersJson, String bodyData) {
+            try {
+                java.net.URL url = new java.net.URL(urlStr);
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setRequestMethod(method != null ? method.toUpperCase() : "GET");
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(15000);
+                conn.setInstanceFollowRedirects(true);
+                if (headersJson != null && !headersJson.trim().isEmpty()) {
+                    org.json.JSONObject headers = new org.json.JSONObject(headersJson);
+                    java.util.Iterator<String> keys = headers.keys();
+                    while (keys.hasNext()) {
+                        String k = keys.next();
+                        conn.setRequestProperty(k, headers.getString(k));
+                    }
+                }
+                if ("POST".equalsIgnoreCase(method) && bodyData != null) {
+                    conn.setDoOutput(true);
+                    try (java.io.OutputStream os = conn.getOutputStream()) {
+                        os.write(bodyData.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    }
+                }
+                int code = conn.getResponseCode();
+                java.io.InputStream is = (code >= 200 && code < 400) ? conn.getInputStream() : conn.getErrorStream();
+                String body = "";
+                if (is != null) {
+                    java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+                    byte[] data = new byte[8192];
+                    int nRead;
+                    while ((nRead = is.read(data, 0, data.length)) != -1) {
+                        buffer.write(data, 0, nRead);
+                    }
+                    body = buffer.toString("UTF-8");
+                    is.close();
+                }
+                org.json.JSONObject res = new org.json.JSONObject();
+                res.put("statusCode", code);
+                res.put("body", body);
+                return res.toString();
+            } catch (Exception e) {
+                org.json.JSONObject err = new org.json.JSONObject();
+                try {
+                    err.put("statusCode", 500);
+                    err.put("error", e.getMessage());
+                } catch (Exception ignored) {}
+                return err.toString();
+            }
+        }
+
+        @JavascriptInterface
         public String getPendingSharedUrl() {
             String url = pendingSharedUrl;
             pendingSharedUrl = null;
