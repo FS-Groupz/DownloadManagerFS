@@ -1288,7 +1288,7 @@
             </div>
             <div class="task-details">
               <span>${t.size || '0 B'} (${(t.progress || 0).toFixed(0)}%)</span>
-              <span>${t.speed || '0 KB/s'} • ${t.eta || '--:--'}</span>
+              <span style="${t.status === 'Error' ? 'color:#f38ba8; font-weight:600;' : ''}">${t.error || t.speed || '0 KB/s'} • ${t.eta || '--:--'}</span>
             </div>
             <div class="task-controls">
               ${t.status === 'Downloading' && !t.id.startsWith('task_') ? `<button class="btn-action" onclick="pauseTask('${t.id}')">⏸ Pause</button>` : ''}
@@ -1368,7 +1368,7 @@
     function deleteTask(id) {
       localActiveTasks = localActiveTasks.filter(t => t.id !== id);
       const serverBase = getServerBase();
-      if (serverBase && !id.startsWith('task_')) {
+      if (serverBase) {
         fetch(`${serverBase}/api/tasks/${id}/cancel`, { method: 'POST' }).then(() => fetchTasks());
       }
       renderTasks();

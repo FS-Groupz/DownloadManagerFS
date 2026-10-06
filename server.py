@@ -18,11 +18,18 @@ import webbrowser
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, unquote
 
+# Automatically activate static-ffmpeg if installed (ensures ffmpeg/ffprobe exists on Render/cloud)
+try:
+    import static_ffmpeg
+    static_ffmpeg.add_paths()
+except Exception:
+    pass
+
 PORT = int(os.environ.get("PORT", 5000))
 DOWNLOAD_DIR = os.path.join(os.path.expanduser("~"), "Downloads", "DownloadManagerFS")
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
-# Add deno to PATH if available in standard location
+# Add deno and node to PATH if available in standard user locations
 deno_in_path = shutil.which("deno")
 deno_user_dir = os.path.expanduser("~/.deno/bin")
 if not deno_in_path and os.path.exists(deno_user_dir):
@@ -88,6 +95,8 @@ class DownloadTask:
         self.speed = "Starting..."
         self.eta = "--:--"
         self.download_url = ""
+        self.error = ""
+        self.logs = []
         self.process = None
 
     def to_dict(self):
@@ -103,7 +112,8 @@ class DownloadTask:
             "size": self.size,
             "speed": self.speed,
             "eta": self.eta,
-            "download_url": self.download_url
+            "download_url": self.download_url,
+            "error": self.error
         }
 
 def run_download_worker(task):
@@ -112,33 +122,45 @@ def run_download_worker(task):
         env["PATH"] = deno_user_dir + os.pathsep + env.get("PATH", "")
 
     ext = "mp3" if task.audio_only else "mp4"
+    extra_args = [
+        "--no-check-certificates",
+        "--geo-bypass",
+        "--extractor-args", "youtube:player_client=android,ios,web;player_skip=configs",
+        "--extractor-args", "youtubetab:skip=authcheck",
+        "--compat-options", "no-youtube-unavailable-videos"
+    ]
+
     if task.audio_only:
         fmt = "bestaudio/best"
-        extra_args = ["-x", "--audio-format", "mp3"]
+        extra_args.extend(["-x", "--audio-format", "mp3"])
     else:
         q = (task.quality or "720p").lower()
         if q in ['best', '4k', '2160p']:
-            fmt = "bestvideo+bestaudio/best"
+            fmt = "bestvideo+bestaudio/bestvideo+best/best"
         elif q == '1080p':
-            fmt = "bestvideo[height<=1920][width<=1080]+bestaudio/bestvideo[height<=1080][width<=1920]+bestaudio/bestvideo[height<=1080]+bestaudio/best"
+            fmt = "bestvideo[height<=1920][width<=1080]+bestaudio/bestvideo[height<=1080][width<=1920]+bestaudio/bestvideo[height<=1080]+bestaudio/bestvideo+bestaudio/best[height<=1080]/best"
         elif q == '720p':
-            fmt = "bestvideo[height<=1280][width<=720]+bestaudio/bestvideo[height<=720][width<=1280]+bestaudio/bestvideo[height<=720]+bestaudio/best"
+            fmt = "bestvideo[height<=1280][width<=720]+bestaudio/bestvideo[height<=720][width<=1280]+bestaudio/bestvideo[height<=720]+bestaudio/bestvideo+bestaudio/best[height<=720]/best"
         elif q == '480p':
-            fmt = "bestvideo[height<=1080][width<=608]+bestaudio/bestvideo[height<=480][width<=854]+bestaudio/bestvideo[height<=480]+bestaudio/best"
+            fmt = "bestvideo[height<=1080][width<=608]+bestaudio/bestvideo[height<=480][width<=854]+bestaudio/bestvideo[height<=480]+bestaudio/bestvideo+bestaudio/best[height<=480]/best"
         elif q == '360p':
-            fmt = "bestvideo[height<=640][width<=360]+bestaudio/bestvideo[height<=360][width<=640]+bestaudio/bestvideo[height<=360]+bestaudio/best"
+            fmt = "bestvideo[height<=640][width<=360]+bestaudio/bestvideo[height<=360][width<=640]+bestaudio/bestvideo[height<=360]+bestaudio/bestvideo+bestaudio/best[height<=360]/best"
         else:
-            fmt = "bestvideo[height<=1280][width<=720]+bestaudio/bestvideo[height<=720][width<=1280]+bestaudio/bestvideo[height<=720]+bestaudio/best"
+            fmt = "bestvideo[height<=1280][width<=720]+bestaudio/bestvideo[height<=720][width<=1280]+bestaudio/bestvideo[height<=720]+bestaudio/bestvideo+bestaudio/best"
 
-        extra_args = ["--merge-output-format", "mp4"]
+        extra_args.extend(["--merge-output-format", "mp4"])
 
-    # Explicitly hook Deno runtime for YouTube deciphering
+    # Hook JavaScript runtime for YouTube signature deciphering
+    node_bin = shutil.which("node")
     deno_bin = shutil.which("deno")
     if not deno_bin and os.path.exists(deno_user_dir):
         candidate = os.path.join(deno_user_dir, "deno")
         if os.path.exists(candidate):
             deno_bin = candidate
-    if deno_bin:
+
+    if node_bin:
+        extra_args.extend(["--js-runtimes", f"node:{node_bin}"])
+    elif deno_bin:
         extra_args.extend(["--js-runtimes", f"deno:{deno_bin}"])
 
     out_template = os.path.join(DOWNLOAD_DIR, f"%(title).60s_%(id)s.{ext}")
@@ -153,6 +175,8 @@ def run_download_worker(task):
     ] + extra_args
 
     print(f"[{task.id}] Starting download: {task.url} (quality: {task.quality}, fmt: {fmt})")
+    recent_lines = []
+
     try:
         proc = subprocess.Popen(
             cmd,
@@ -168,6 +192,16 @@ def run_download_worker(task):
             line = line.strip()
             if not line:
                 continue
+
+            recent_lines.append(line)
+            if len(recent_lines) > 30:
+                recent_lines.pop(0)
+
+            task.logs.append(line)
+            if len(task.logs) > 50:
+                task.logs.pop(0)
+
+            print(f"[{task.id}] {line}")
 
             if "[download] Destination:" in line:
                 raw_path = line.split("[download] Destination:", 1)[1].strip()
@@ -230,15 +264,20 @@ def run_download_worker(task):
             task.download_url = f"/api/file/{task.id}/{clean_display_name}"
             print(f"[{task.id}] SUCCESS: {task.saved_filepath} -> {task.download_url}")
         else:
-            if task.status != "Paused":
+            if task.status not in ["Paused", "Cancelled"]:
                 task.status = "Error"
-                task.speed = "Failed"
-            print(f"[{task.id}] FAILED: exit {proc.returncode}")
+                err_candidates = [l for l in recent_lines if "ERROR:" in l or "Error:" in l]
+                err_msg = err_candidates[-1] if err_candidates else (recent_lines[-1] if recent_lines else f"Exit {proc.returncode}")
+                err_msg = err_msg.replace("ERROR: ", "").strip()
+                task.error = err_msg
+                task.speed = err_msg[:60]
+            print(f"[{task.id}] FAILED (exit {proc.returncode}): {task.error}")
 
     except Exception as e:
         task.status = "Error"
-        task.speed = str(e)
-        print(f"[{task.id}] ERROR: {e}")
+        task.error = str(e)
+        task.speed = str(e)[:60]
+        print(f"[{task.id}] EXCEPTION: {e}")
 
 class RequestHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -275,7 +314,34 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"tasks": task_list, "total_speed": total_speed}).encode("utf-8"))
             return
 
-        # 2. Serve static files (HTML, icons, manifest, service worker, ad logo)
+        # 2. Diagnostic & Health Check Endpoint
+        if path == "/api/diag":
+            ytdlp_ver = "unknown"
+            try:
+                out = subprocess.check_output(get_ytdlp_cmd() + ["--version"], text=True, timeout=5)
+                ytdlp_ver = out.strip()
+            except Exception as ex:
+                ytdlp_ver = f"Error: {ex}"
+
+            diag_info = {
+                "status": "online",
+                "python": sys.version,
+                "yt_dlp_version": ytdlp_ver,
+                "ffmpeg": shutil.which("ffmpeg"),
+                "node": shutil.which("node"),
+                "deno": shutil.which("deno"),
+                "download_dir": DOWNLOAD_DIR,
+                "tasks_count": len(tasks),
+                "tasks": [t.to_dict() for t in tasks.values()]
+            }
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            if not head_only:
+                self.wfile.write(json.dumps(diag_info, indent=2).encode("utf-8"))
+            return
+
+        # 3. Serve static files (HTML, icons, manifest, service worker, ad logo)
         if path in ["/", "/index.html"]:
             index_file = get_asset_file("index.html")
             if index_file and os.path.exists(index_file):
@@ -311,7 +377,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                     self.wfile.write(f.read())
             return
 
-        # 3. Serve downloaded file by task ID: /api/file/<task_id>/<filename>
+        # 4. Serve downloaded file by task ID: /api/file/<task_id>/<filename>
         if path.startswith("/api/file/"):
             parts = path.strip("/").split("/")
             if len(parts) >= 3:
@@ -329,7 +395,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(b"File not found")
             return
 
-        # 4. Legacy downloads endpoint
+        # 5. Legacy downloads endpoint
         if path.startswith("/downloads/"):
             filename = unquote(path[len("/downloads/"):])
             filepath = os.path.join(DOWNLOAD_DIR, filename)
@@ -440,17 +506,28 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"status": "ok", "task_id": task_id}).encode("utf-8"))
             return
 
-        if path.startswith("/api/tasks/") and path.endswith("/cancel"):
-            task_id = path.split("/")[3]
-            with tasks_lock:
-                if task_id in tasks:
-                    t = tasks[task_id]
-                    if t.process and t.process.poll() is None:
-                        t.process.terminate()
-                    t.status = "Cancelled"
-            self.send_response(200)
-            self.end_headers()
-            return
+        if path.startswith("/api/tasks/"):
+            parts = path.strip("/").split("/")
+            if len(parts) >= 4:
+                task_id = parts[2]
+                action = parts[3]
+                with tasks_lock:
+                    if task_id in tasks:
+                        t = tasks[task_id]
+                        if action == "cancel":
+                            if t.process and t.process.poll() is None:
+                                t.process.terminate()
+                            t.status = "Cancelled"
+                        elif action == "delete":
+                            if t.process and t.process.poll() is None:
+                                t.process.terminate()
+                            del tasks[task_id]
+
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(b'{"status":"ok"}')
+                return
 
         self.send_response(404)
         self.end_headers()
@@ -470,7 +547,6 @@ def main():
     print(f" Downloads folder:  {DOWNLOAD_DIR}")
     print("=" * 60)
 
-    # If running interactively without --no-browser, open desktop browser
     if "--no-browser" not in sys.argv and not os.environ.get("HEADLESS"):
         threading.Thread(target=open_browser, daemon=True).start()
 

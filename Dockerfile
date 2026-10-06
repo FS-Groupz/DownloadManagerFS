@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
-# Install system dependencies (ffmpeg is essential for yt-dlp video/audio merging)
-RUN apt-get update && apt-get install -y --no-install-recommends     ffmpeg     ca-certificates     curl     && rm -rf /var/lib/apt/lists/*
+# Install system dependencies (ffmpeg is essential for yt-dlp video/audio merging, nodejs for JS deciphering)
+RUN apt-get update && apt-get install -y --no-install-recommends     ffmpeg     ca-certificates     curl     nodejs     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
