@@ -1215,6 +1215,55 @@
       }
     }
 
+
+    // 0. YouTube Fast Invidious Direct Resolver (Client-side, bypasses cloud bot detection)
+    async function resolveYouTubeDirect(url, isAudio) {
+      try {
+        const idMatch = url.match(/(?:youtu\.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=)([^#\&\?]{11})/);
+        if (!idMatch) return null;
+        const videoId = idMatch[1];
+        const res = await requestHttp("https://invidious.f5.si/api/v1/videos/" + videoId, "GET", {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Accept": "application/json"
+        });
+        if (res.ok && res.body) {
+          const data = JSON.parse(res.body);
+          const rawTitle = (data.title || ("youtube_" + videoId));
+          const cleanTitle = rawTitle.replace(/[^\w\s\-\.]/g, "_").trim();
+          const adaptive = data.adaptiveFormats || [];
+          const formats = data.formatStreams || [];
+
+          if (isAudio) {
+            const audioStream = adaptive.find(f => f.type && f.type.includes("audio/mp4") && f.url) ||
+                                adaptive.find(f => f.type && f.type.includes("audio") && f.url);
+            if (audioStream && audioStream.url) {
+              return {
+                title: cleanTitle + ".m4a",
+                directUrl: audioStream.url,
+                platform: "YouTube (Audio)"
+              };
+            }
+          }
+
+          // Pick 720p or 360p or best MP4
+          const vidStream = adaptive.find(f => f.qualityLabel === "720p" && f.type && f.type.includes("mp4") && f.url) ||
+                            adaptive.find(f => f.qualityLabel === "360p" && f.type && f.type.includes("mp4") && f.url) ||
+                            formats.find(f => f.url) ||
+                            adaptive.find(f => f.type && f.type.includes("mp4") && f.url);
+          if (vidStream && vidStream.url) {
+            return {
+              title: cleanTitle + ".mp4",
+              directUrl: vidStream.url,
+              platform: "YouTube"
+            };
+          }
+        }
+      } catch (err) {
+        console.warn("YouTube fast direct resolver error:", err);
+      }
+      return null;
+    }
+
     // 1. TikTok Fast Resolver (tikwm.com & ssstik.io)
     async function resolveTikTokDirect(url) {
       try {
